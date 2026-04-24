@@ -8,7 +8,7 @@ This package is part of the Wheels first-party package collection, hosted in the
 
 ## Package Architecture
 
-Standard Wheels package. The main CFC (`Basecoat.cfc`) contains `init()` and all public methods. Wheels injects every public method into controller and view scopes via PackageLoader. Call them as `#functionName()#` in views.
+Standard Wheels package. The main CFC (`Basecoat.cfc`) contains `init()` and all public methods. Wheels injects every public method into the controller scope via PackageLoader. Because Wheels views execute in the controller's `variables` scope, controller mixins surface transitively in views — call them as `#functionName()#` in views.
 
 ## File Structure
 
