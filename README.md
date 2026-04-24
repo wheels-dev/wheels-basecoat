@@ -96,7 +96,7 @@ This package ships helpers, not CSS assets. Grab `basecoat.min.css` from the [Ba
 
 ### 3. Component reference
 
-All helpers live on `Basecoat.cfc` and are injected into controllers and views.
+All helpers live on `Basecoat.cfc` and are injected into the controller scope via the package mixin system; they surface in views because Wheels views execute in the controller's `variables` scope.
 
 | Category | Helpers |
 |---|---|
