@@ -4,7 +4,7 @@
  * Generates shadcn/ui-quality HTML using Basecoat CSS classes.
  * Works with or without wheels-hotwire.
  */
-component mixin="controller" output="false" {
+component output="false" {
 
 	function init() {
 		this.version = "3.0";
