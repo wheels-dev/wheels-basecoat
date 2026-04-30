@@ -259,11 +259,23 @@ component mixin="controller" output="false" {
 	}
 
 	// ==============================================
-	// PRIVATE: LUCIDE ICON SVG HELPER
+	// LUCIDE ICON SVG HELPER (intentionally public — see note below)
 	// ==============================================
 
-	/** Returns SVG markup for a Lucide icon. Extend the icon map as needed. */
-	private string function $uiLucideIcon(required string name, numeric size = 24, numeric strokeWidth = 2, string class = "") {
+	/**
+	 * Returns SVG markup for a Lucide icon. Extend the icon map as needed.
+	 *
+	 * Declared `public` despite the `$`-prefix-internal naming because Wheels'
+	 * `PackageLoader` only mixes the package's PUBLIC methods into the target
+	 * scope (controllers in this case). Sibling helpers like `uiButton(icon=...)`,
+	 * `uiAlert`, and `uiPagination` invoke `$uiLucideIcon` from within the
+	 * mixed-in variables-scope context — if it stays `private`, those calls
+	 * blow up with `No matching function [$UILUCIDEICON] found`. The leading
+	 * `$` keeps signalling "internal — don't call from app code" while keeping
+	 * the method visible across the package after PackageLoader integrates
+	 * the methods. See wheels-basecoat#2 / Wheels Tutorial Finding #14.
+	 */
+	public string function $uiLucideIcon(required string name, numeric size = 24, numeric strokeWidth = 2, string class = "") {
 		var icons = {
 			"plus": '<line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/>',
 			"trash": '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
@@ -288,11 +300,18 @@ component mixin="controller" output="false" {
 	}
 
 	// ==============================================
-	// PRIVATE: ID GENERATION
+	// ID GENERATION (intentionally public — see $uiLucideIcon note above)
 	// ==============================================
 
-	/** Generates a short unique ID if none provided. */
-	private string function $uiBuildId(string providedId = "", string prefix = "ui") {
+	/**
+	 * Generates a short unique ID if none provided.
+	 *
+	 * Declared `public` for the same reason as `$uiLucideIcon` — `uiField`,
+	 * `uiInput`, `uiCheckbox`, `uiTextarea`, etc. all call `$uiBuildId` from
+	 * the mixed-in scope, and Wheels' `PackageLoader` only carries public
+	 * methods across to the target. The `$` prefix still signals "internal".
+	 */
+	public string function $uiBuildId(string providedId = "", string prefix = "ui") {
 		if (len(arguments.providedId))
 			return arguments.providedId;
 		return arguments.prefix & "-" & replace(left(createUUID(), 8), "-", "", "all");
