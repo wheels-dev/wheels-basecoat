@@ -1,6 +1,6 @@
 {
     "name": "wheels-basecoat",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "author": "Wheels Core Team",
     "description": "Basecoat UI component helpers for Wheels. shadcn/ui-quality design using plain HTML + Tailwind CSS. No React required.",
     "wheelsVersion": ">=4.0",
