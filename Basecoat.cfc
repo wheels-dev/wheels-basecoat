@@ -1833,6 +1833,239 @@ component output="false" {
 		return trim(local.html);
 	}
 
+	/**
+	 * Wheels-bound variant of `uiSelect`. Auto-resolves the model value
+	 * (single-string for single-select; JSON-array string for multiselect)
+	 * and emits a `name="<objectName>[<property>]"` hidden input — same
+	 * shape as `uiBoundField` does for ad-hoc inputs.
+	 *
+	 * <pre>
+	 *   ##uiBoundSelect(objectName="post", property="status",
+	 *                   options="draft:Draft,published:Published,archived:Archived")##
+	 * </pre>
+	 */
+	public string function uiBoundSelect(
+		required string objectName,
+		required string property,
+		required string options,
+		string placeholder = "Select an option",
+		boolean search = false,
+		boolean multiselect = false,
+		boolean closeOnSelect = false,
+		string id = "",
+		string class = ""
+	) {
+		if (!structKeyExists(variables, arguments.objectName)) {
+			throw(
+				type = "WheelsBasecoat.ObjectNotFound",
+				message = "uiBoundSelect: object '#arguments.objectName#' not found in the current scope."
+			);
+		}
+		var obj = variables[arguments.objectName];
+
+		// Resolve value. Multiselect tolerates either a JSON-array string,
+		// a CSV string, or a real array on the model.
+		var resolvedValue = "";
+		try {
+			var raw = obj[arguments.property] ?: "";
+			if (arguments.multiselect && IsArray(raw)) {
+				resolvedValue = serializeJSON(raw);
+			} else {
+				resolvedValue = raw;
+			}
+		} catch (any e) {
+			resolvedValue = "";
+		}
+
+		return uiSelect(
+			name = "#arguments.objectName#[#arguments.property#]",
+			options = arguments.options,
+			value = resolvedValue,
+			placeholder = arguments.placeholder,
+			search = arguments.search,
+			multiselect = arguments.multiselect,
+			closeOnSelect = arguments.closeOnSelect,
+			id = arguments.id,
+			class = arguments.class
+		);
+	}
+
+	// ==============================================
+	// SLIDER  (styled <input type="range"> with --slider-value fill)
+	// ==============================================
+	//
+	// basecoat-css 0.3.x styles `input[type=range]` with a CSS variable
+	// `--slider-value` that drives the filled portion of the track. We
+	// compute the current percentage server-side and emit `style` + the
+	// `aria-valuetext`, so the slider renders with the right fill on
+	// first paint (no JS needed).
+
+	/**
+	 * Renders a basecoat-styled range slider.
+	 *
+	 * @name Form input name. Required.
+	 * @value Current value. Defaults to halfway between min and max.
+	 * @min Minimum value. Default 0.
+	 * @max Maximum value. Default 100.
+	 * @step Step increment. Default 1.
+	 * @label Optional label text rendered above the slider.
+	 * @showValue Render the current value to the right of the slider.
+	 * @id Optional input id. Auto-generated if omitted.
+	 */
+	public string function uiSlider(
+		required string name,
+		any value = "",
+		numeric min = 0,
+		numeric max = 100,
+		numeric step = 1,
+		string label = "",
+		boolean showValue = false,
+		boolean disabled = false,
+		string id = "",
+		string class = ""
+	) {
+		var local = {};
+		local.id = $uiBuildId(arguments.id, "slider");
+		local.val = len(arguments.value) ? arguments.value : (arguments.min + arguments.max) / 2;
+		// Clamp + percentage for the fill var.
+		local.range = arguments.max - arguments.min;
+		local.pct = local.range == 0 ? 0 : ((local.val - arguments.min) / local.range) * 100;
+		if (local.pct < 0) local.pct = 0;
+		if (local.pct > 100) local.pct = 100;
+		local.attrs = 'id="#local.id#" name="#arguments.name#" type="range"'
+			& ' min="#arguments.min#" max="#arguments.max#" step="#arguments.step#"'
+			& ' value="#local.val#"'
+			& ' style="--slider-value: #numberFormat(local.pct, '0.##')#%"'
+			& ' aria-valuemin="#arguments.min#" aria-valuemax="#arguments.max#" aria-valuenow="#local.val#"';
+		if (arguments.disabled) local.attrs &= " disabled";
+		if (len(arguments.class)) local.attrs &= ' class="#arguments.class#"';
+
+		savecontent variable="local.html" {
+			writeOutput('<div class="grid gap-2">' & chr(10));
+			if (len(arguments.label)) {
+				writeOutput('<label for="#local.id#">#arguments.label#</label>' & chr(10));
+			}
+			if (arguments.showValue) {
+				writeOutput('<div class="flex items-center gap-3">' & chr(10));
+				writeOutput('<input #local.attrs# class="flex-1">' & chr(10));
+				writeOutput('<output for="#local.id#" data-ui-slider-output class="text-sm tabular-nums w-12 text-right">#local.val#</output>' & chr(10));
+				writeOutput('</div>');
+			} else {
+				writeOutput('<input #local.attrs#>');
+			}
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	/**
+	 * Wheels-bound variant of `uiSlider`. Auto-resolves the value from
+	 * the model and emits `name="<objectName>[<property>]"`. Label
+	 * defaults to the humanized property name (matching `uiBoundField`).
+	 */
+	public string function uiBoundSlider(
+		required string objectName,
+		required string property,
+		numeric min = 0,
+		numeric max = 100,
+		numeric step = 1,
+		string label = "",
+		boolean showValue = false,
+		boolean disabled = false,
+		string id = "",
+		string class = ""
+	) {
+		if (!structKeyExists(variables, arguments.objectName)) {
+			throw(
+				type = "WheelsBasecoat.ObjectNotFound",
+				message = "uiBoundSlider: object '#arguments.objectName#' not found in the current scope."
+			);
+		}
+		var obj = variables[arguments.objectName];
+		var val = "";
+		try { val = obj[arguments.property] ?: ""; } catch (any e) { val = ""; }
+		return uiSlider(
+			name = "#arguments.objectName#[#arguments.property#]",
+			value = val,
+			min = arguments.min,
+			max = arguments.max,
+			step = arguments.step,
+			label = len(arguments.label) ? arguments.label : $humanize(arguments.property),
+			showValue = arguments.showValue,
+			disabled = arguments.disabled,
+			id = arguments.id,
+			class = arguments.class
+		);
+	}
+
+	// ==============================================
+	// STEPS  (multi-step / wizard progress indicator)
+	// ==============================================
+	//
+	// basecoat-css 0.3.x doesn't ship a stepper component. The output
+	// uses semantic `<ol>` + `aria-current="step"` + status data
+	// attributes that the bundled wheels-basecoat-extras.min.css styles
+	// (numbered circles, a connecting line, color-coding by status).
+	//
+	//   <ol class="ui-steps">
+	//     <li data-status="complete"><span class="ui-step-marker">1</span><span class="ui-step-label">Account</span></li>
+	//     <li data-status="current" aria-current="step"><span class="ui-step-marker">2</span>…</li>
+	//     <li data-status="upcoming"><span class="ui-step-marker">3</span>…</li>
+	//   </ol>
+
+	/** Opens a steps progress indicator. Close with uiStepsEnd(). */
+	public string function uiSteps(string ariaLabel = "Progress", string class = "") {
+		var cls = "ui-steps";
+		if (len(arguments.class)) cls &= " " & arguments.class;
+		return '<nav aria-label="#arguments.ariaLabel#"><ol class="#cls#">';
+	}
+
+	/**
+	 * Renders a single step. Status drives styling and ARIA:
+	 *   - "complete": done, with a check icon
+	 *   - "current":  active step, sets aria-current="step"
+	 *   - "upcoming": future step
+	 *
+	 * Pass `number` for the marker (defaults to incrementing counter
+	 * tracked in request scope between uiSteps / uiStepsEnd).
+	 */
+	public string function uiStep(
+		required string text,
+		string status = "upcoming",
+		string number = "",
+		string description = "",
+		string href = ""
+	) {
+		$validateEnum(arguments.status, "complete,current,upcoming", "uiStep", "status");
+		// Auto-increment number when caller doesn't pass one.
+		if (!structKeyExists(request, "$basecoatStepCounter")) request.$basecoatStepCounter = 0;
+		request.$basecoatStepCounter++;
+		var n = len(arguments.number) ? arguments.number : request.$basecoatStepCounter;
+
+		var marker = "";
+		if (arguments.status == "complete") {
+			marker = $uiLucideIcon("check", 14);
+		} else {
+			marker = n;
+		}
+
+		var aria = arguments.status == "current" ? ' aria-current="step"' : "";
+		var labelHtml = '<span class="ui-step-label">#arguments.text#</span>';
+		if (len(arguments.description)) {
+			labelHtml &= '<span class="ui-step-description">#arguments.description#</span>';
+		}
+		var inner = '<span class="ui-step-marker">#marker#</span><span class="ui-step-text">#labelHtml#</span>';
+		if (len(arguments.href) && arguments.status != "current") {
+			inner = '<a href="#arguments.href#" class="ui-step-link">' & inner & '</a>';
+		}
+		return '<li data-status="#arguments.status#"#aria#>#inner#</li>';
+	}
+
+	public string function uiStepsEnd() {
+		StructDelete(request, "$basecoatStepCounter");
+		return '</ol></nav>';
+	}
+
 }
 
 

@@ -2,6 +2,16 @@
 
 All notable changes to this package will be documented in this file.
 
+## [2.3.0-rc.1] — 2026-05-01
+
+### Added
+- **`uiSlider(name, value, min, max, step, label, showValue, disabled, id, class)`** — basecoat-styled `<input type="range">` wrapper. Computes the `--slider-value` CSS variable percentage server-side from the current value so the filled portion of the track renders correctly on first paint (no JS required for the initial render). Optional `showValue=true` renders an `<output data-ui-slider-output>` mirror that the bundled `wheels-basecoat-ui.js` keeps in sync as the user drags. Emits `aria-valuemin/max/now`. Pairs cleanly with `uiBoundSlider`.
+- **`uiBoundSlider(objectName, property, ...)`** — Wheels-bound variant that auto-resolves the value from `obj[property]`, emits `name="<objectName>[<property>]"`, and humanizes the property name into the default label. Mirrors `uiBoundField`'s ergonomics for slider use.
+- **`uiSelect`'s Wheels-bound sibling: `uiBoundSelect(objectName, property, options, ...)`** — same options syntax + tolerates a real array on the model for multi-select (auto-serializes to JSON for the hidden input). Throws `WheelsBasecoat.ObjectNotFound` if the named object isn't in scope.
+- **Steps / wizard progress indicator**: `uiSteps(ariaLabel, class)` opens a labeled `<nav><ol class="ui-steps">`; `uiStep(text, status="complete|current|upcoming", number, description, href)` renders each `<li data-status="...">`; `uiStepsEnd()` closes. Auto-numbers steps via a request-scoped counter when no `number` is passed. Complete steps render a check icon in the marker; current steps emit `aria-current="step"`. Optional `href` wraps complete/upcoming markers in a link (current never links). Visual defaults shipped in `wheels-basecoat-extras.min.css` — numbered circles connected by a colored progress line, mobile-stacked layout below 640px.
+- **`wheels-basecoat-extras.min.css` extended** with `.ui-steps` rules to match.
+- **`wheels-basecoat-ui.js` extended** to keep slider `--slider-value` in sync as the user drags + mirror the live value into any matching `<output data-ui-slider-output>`. CSP-safe; no inline event handlers needed.
+
 ## [2.2.0-rc.1] — 2026-05-01
 
 ### Added
