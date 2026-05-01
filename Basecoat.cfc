@@ -376,7 +376,10 @@ component output="false" {
 			"log-out": '<path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>',
 			"log-in": '<path d="m10 17 5-5-5-5"/><path d="M15 12H3"/><path d="M9 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9"/>',
 			"user": '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-			"settings": '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'
+			"settings": '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+			"menu": '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
+			"home": '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+			"file-text": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/>'
 		};
 
 		var paths = structKeyExists(icons, arguments.name) ? icons[arguments.name] : '<circle cx="12" cy="12" r="10"/>';
@@ -771,40 +774,84 @@ component output="false" {
 	}
 
 	// ==============================================
-	// TABS
+	// TABS  (driven by basecoat-js's tabs.js)
 	// ==============================================
+	//
+	// basecoat-css 0.3.x styles tabs via ARIA-role selectors:
+	//   .tabs [role=tablist]
+	//   .tabs [role=tablist] [role=tab]
+	//   .tabs [role=tabpanel]
+	// The active tab carries `aria-selected="true"` + `tabindex="0"`; inactive
+	// tabs carry `aria-selected="false"` + `tabindex="-1"`. Each tab's
+	// `aria-controls` matches the panel's `id`. tabs.js handles click +
+	// arrow-key navigation and toggles the `hidden` attribute on panels to
+	// show/hide them.
+	//
+	// Use a `defaultTab` value on `uiTabs(...)`; trigger and content helpers
+	// auto-activate when their `value` matches it. The defaultTab is stashed
+	// in the request scope between `uiTabs()` and `uiTabsEnd()`.
 
-	/** Opens a Basecoat tabs container. Close with uiTabsEnd(). */
-	public string function uiTabs(string defaultTab = "", string class = "") {
+	/** Opens a tabs container. Close with uiTabsEnd(). */
+	public string function uiTabs(string defaultTab = "", string id = "", string class = "") {
 		var cls = "tabs";
 		if (len(arguments.class)) cls &= " " & arguments.class;
-		var dataDefault = len(arguments.defaultTab) ? ' data-default="#arguments.defaultTab#"' : "";
-		return '<div class="#cls#"#dataDefault#>';
+		// Stash the active value + a per-instance ID prefix so that nested
+		// uiTabTrigger / uiTabContent helpers can auto-pair `aria-controls`.
+		var prefix = $uiBuildId(arguments.id, "tabs");
+		request.$basecoatTabs = {
+			defaultTab: arguments.defaultTab,
+			prefix: prefix
+		};
+		var idAttr = len(arguments.id) ? ' id="#arguments.id#"' : "";
+		return '<div class="#cls#"#idAttr#>';
 	}
 
-	/** Opens the tabs-list container. Close with uiTabListEnd(). */
-	public string function uiTabList(string class = "") {
-		var cls = "tabs-list";
-		if (len(arguments.class)) cls &= " " & arguments.class;
-		return '<div class="#cls#">';
+	/** Opens the tablist (the row of triggers). Close with uiTabListEnd(). */
+	public string function uiTabList(string ariaLabel = "Tabs", string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<div role="tablist" aria-label="#arguments.ariaLabel#"#classAttr#>';
 	}
 
 	public string function uiTabListEnd() {
 		return '</div>';
 	}
 
-	/** Renders a tab trigger button. */
+	/**
+	 * Renders a tab trigger button. Auto-activates when its `value` matches
+	 * the parent `uiTabs(defaultTab=)`. The `aria-controls` attribute targets
+	 * the matching `uiTabContent(value=)` panel id.
+	 */
 	public string function uiTabTrigger(required string value, required string text, string class = "") {
-		var cls = "tabs-trigger";
-		if (len(arguments.class)) cls &= " " & arguments.class;
-		return '<button class="#cls#" data-value="#arguments.value#">#arguments.text#</button>';
+		var ctx = StructKeyExists(request, "$basecoatTabs") ? request.$basecoatTabs : { defaultTab: "", prefix: "tabs" };
+		var isActive = len(ctx.defaultTab) && ctx.defaultTab == arguments.value;
+		var tabId = "#ctx.prefix#-tab-#arguments.value#";
+		var panelId = "#ctx.prefix#-panel-#arguments.value#";
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<button type="button"'
+			& ' id="#tabId#"'
+			& ' role="tab"'
+			& ' aria-controls="#panelId#"'
+			& ' aria-selected="#isActive ? 'true' : 'false'#"'
+			& ' tabindex="#isActive ? '0' : '-1'#"'
+			& classAttr
+			& '>#arguments.text#</button>';
 	}
 
-	/** Opens a tab content panel. Close with uiTabContentEnd(). */
+	/** Opens a tab content panel. Auto-hidden unless its `value` matches the parent default. Close with uiTabContentEnd(). */
 	public string function uiTabContent(required string value, string class = "") {
-		var cls = "tabs-content";
-		if (len(arguments.class)) cls &= " " & arguments.class;
-		return '<div class="#cls#" data-value="#arguments.value#">';
+		var ctx = StructKeyExists(request, "$basecoatTabs") ? request.$basecoatTabs : { defaultTab: "", prefix: "tabs" };
+		var isActive = len(ctx.defaultTab) && ctx.defaultTab == arguments.value;
+		var tabId = "#ctx.prefix#-tab-#arguments.value#";
+		var panelId = "#ctx.prefix#-panel-#arguments.value#";
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<div'
+			& ' id="#panelId#"'
+			& ' role="tabpanel"'
+			& ' aria-labelledby="#tabId#"'
+			& ' tabindex="0"'
+			& (isActive ? '' : ' hidden')
+			& classAttr
+			& '>';
 	}
 
 	public string function uiTabContentEnd() {
@@ -812,33 +859,63 @@ component output="false" {
 	}
 
 	public string function uiTabsEnd() {
+		StructDelete(request, "$basecoatTabs");
 		return '</div>';
 	}
 
 	// ==============================================
-	// DROPDOWNS
+	// DROPDOWNS  (driven by basecoat-js's dropdown-menu.js)
 	// ==============================================
+	//
+	// basecoat-css 0.3.x dropdowns are built on the popover primitive:
+	//   <div class="dropdown-menu">
+	//     <button aria-expanded="false" aria-haspopup="menu">Trigger</button>
+	//     <div data-popover aria-hidden="true">
+	//       <div role="menu">
+	//         <button role="menuitem">Item</button>
+	//         <a role="menuitem" href="...">Linked item</a>
+	//         <hr role="separator">
+	//       </div>
+	//     </div>
+	//   </div>
+	// dropdown-menu.js handles click + keyboard navigation, arrow keys to
+	// move focus between items, Escape to dismiss, outside-click to close.
+	// Items emit role="menuitem" (the JS also recognizes menuitemcheckbox /
+	// menuitemradio if you need them, via direct uiDropdownCheckItem etc.
+	// — out of scope for this rewrite).
 
-	/** Opens a CSS-only dropdown (details/summary). Close with uiDropdownEnd(). */
+	/** Opens a dropdown menu. Close with uiDropdownEnd(). */
 	public string function uiDropdown(required string text, string triggerClass = "btn-outline", string class = "") {
-		var cls = "dropdown";
+		var cls = "dropdown-menu";
 		if (len(arguments.class)) cls &= " " & arguments.class;
-		return '<details class="#cls#"><summary class="#arguments.triggerClass#">#arguments.text#</summary><ul>';
+		return '<div class="#cls#">'
+			& '<button type="button" class="#arguments.triggerClass#" aria-expanded="false" aria-haspopup="menu">#arguments.text#</button>'
+			& '<div data-popover aria-hidden="true">'
+			& '<div role="menu">';
 	}
 
-	/** Renders a dropdown menu item. */
-	public string function uiDropdownItem(required string text, string href = "##", string class = "") {
-		var clsAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
-		return '<li><a href="#arguments.href#"#clsAttr#>#arguments.text#</a></li>';
+	/**
+	 * Renders a dropdown menu item. With `href`, renders a navigation link
+	 * (`<a>`); without, a `<button>`. Both carry `role="menuitem"` so
+	 * dropdown-menu.js's keyboard navigation includes them.
+	 */
+	public string function uiDropdownItem(required string text, string href = "", string class = "", boolean disabled = false) {
+		var idAttr = ' id="dditem-' & replace(left(createUUID(), 8), "-", "", "all") & '"';
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		var disAttr = arguments.disabled ? ' aria-disabled="true"' : "";
+		if (len(arguments.href)) {
+			return '<a role="menuitem"#idAttr# href="#arguments.href#"#classAttr##disAttr#>#arguments.text#</a>';
+		}
+		return '<button type="button" role="menuitem"#idAttr##classAttr##disAttr#>#arguments.text#</button>';
 	}
 
-	/** Renders a separator line inside a dropdown. */
+	/** Renders a separator line inside a dropdown menu. */
 	public string function uiDropdownSeparator() {
-		return '<li><hr class="separator" /></li>';
+		return '<hr role="separator">';
 	}
 
 	public string function uiDropdownEnd() {
-		return '</ul></details>';
+		return '</div></div></div>';
 	}
 
 	// ==============================================
@@ -943,29 +1020,88 @@ component output="false" {
 	}
 
 	// ==============================================
-	// SIDEBAR
+	// SIDEBAR  (driven by basecoat-js's sidebar.js)
 	// ==============================================
+	//
+	// basecoat-css 0.3.x sidebar uses an `<aside class="sidebar">` containing
+	// a single `<nav>` with `<header>`, `<section>`, and `<footer>` direct
+	// children. Inside `<section>` you place one or more `<div role="group">`
+	// containing an optional `<h3>` heading and a list of items. The whole
+	// sidebar tracks its open/closed state via `aria-hidden` on the `<aside>`,
+	// driven by sidebar.js, which also handles:
+	//   - mobile-first responsive collapse at `data-breakpoint` (default 768px)
+	//   - desktop default-open via `data-initial-open` (default true)
+	//   - mobile default-collapsed via `data-initial-mobile-open` (default false)
+	//   - basecoat:sidebar CustomEvent for external open/close/toggle
+	//
+	// Items are rendered as `<a>` (or `<button>`) with optional icon and an
+	// `aria-current="page"` attribute when `active=true`.
 
-	/** Opens a Basecoat sidebar (aside + nav). Close with uiSidebarEnd(). */
-	public string function uiSidebar(string class = "") {
+	/**
+	 * Opens a sidebar. Close with uiSidebarEnd().
+	 *
+	 * @side "left" (default) or "right".
+	 * @initialOpen Default open state on desktop. Default true.
+	 * @initialMobileOpen Default open state on mobile (below `breakpoint`). Default false.
+	 * @breakpoint Pixel width below which the mobile behavior applies. Default 768.
+	 * @id Element id (used by `basecoat:sidebar` CustomEvent listeners).
+	 */
+	public string function uiSidebar(
+		string side = "left",
+		boolean initialOpen = true,
+		boolean initialMobileOpen = false,
+		numeric breakpoint = 768,
+		string id = "",
+		string class = ""
+	) {
+		$validateEnum(arguments.side, "left,right", "uiSidebar", "side");
 		var cls = "sidebar";
 		if (len(arguments.class)) cls &= " " & arguments.class;
-		return '<aside class="#cls#"><nav>';
+		var attrs = '';
+		if (len(arguments.id)) attrs &= ' id="#arguments.id#"';
+		attrs &= ' data-side="#arguments.side#"';
+		if (!arguments.initialOpen) attrs &= ' data-initial-open="false"';
+		if (arguments.initialMobileOpen) attrs &= ' data-initial-mobile-open="true"';
+		if (arguments.breakpoint != 768) attrs &= ' data-breakpoint="#arguments.breakpoint#"';
+		return '<aside class="#cls#"#attrs#><nav>';
 	}
 
-	/** Opens a sidebar section with optional heading. Close with uiSidebarSectionEnd(). */
-	public string function uiSidebarSection(string title = "", string class = "") {
-		var cls = "sidebar-section";
-		if (len(arguments.class)) cls &= " " & arguments.class;
-		var heading = len(arguments.title) ? '<h4>#arguments.title#</h4>' : "";
-		return '<div class="#cls#">#heading#<ul>';
+	/** Opens the sidebar header (title row, brand, etc.). Close with uiSidebarHeaderEnd(). */
+	public string function uiSidebarHeader(string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<header#classAttr#>';
 	}
 
-	public string function uiSidebarSectionEnd() {
-		return '</ul></div>';
+	public string function uiSidebarHeaderEnd() {
+		return '</header>';
 	}
 
-	/** Renders a sidebar navigation item. */
+	/** Opens the scrollable body of the sidebar (the `<section>`). Close with uiSidebarBodyEnd(). */
+	public string function uiSidebarBody(string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<section#classAttr#>';
+	}
+
+	public string function uiSidebarBodyEnd() {
+		return '</section>';
+	}
+
+	/** Opens a group of items inside the sidebar body. Optional `title` renders as an `<h3>` heading. Close with uiSidebarGroupEnd(). */
+	public string function uiSidebarGroup(string title = "", string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		var html = '<div role="group"#classAttr#>';
+		if (len(arguments.title)) html &= '<h3>#arguments.title#</h3>';
+		return html;
+	}
+
+	public string function uiSidebarGroupEnd() {
+		return '</div>';
+	}
+
+	/**
+	 * Renders a sidebar navigation item. Pass `active=true` to mark the
+	 * current page (also sets `aria-current="page"` for screen readers).
+	 */
 	public string function uiSidebarItem(
 		required string text,
 		string href = "##",
@@ -973,15 +1109,56 @@ component output="false" {
 		boolean active = false,
 		string class = ""
 	) {
-		var cls = "sidebar-item";
-		if (arguments.active) cls &= " sidebar-item-active";
-		if (len(arguments.class)) cls &= " " & arguments.class;
-		var iconHtml = len(arguments.icon) ? $uiLucideIcon(arguments.icon, 16, 2) & " " : "";
-		return '<li><a href="#arguments.href#" class="#cls#">#iconHtml##arguments.text#</a></li>';
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		var iconHtml = len(arguments.icon) ? $uiLucideIcon(arguments.icon, 16, 2) : "";
+		var aria = arguments.active ? ' aria-current="page"' : "";
+		return '<a href="#arguments.href#"#classAttr##aria#>#iconHtml##arguments.text#</a>';
+	}
+
+	/** Renders a separator inside the sidebar body. */
+	public string function uiSidebarSeparator() {
+		return '<hr role="separator">';
+	}
+
+	/** Opens the sidebar footer (account widget, version, etc.). Close with uiSidebarFooterEnd(). */
+	public string function uiSidebarFooter(string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<footer#classAttr#>';
+	}
+
+	public string function uiSidebarFooterEnd() {
+		return '</footer>';
 	}
 
 	public string function uiSidebarEnd() {
 		return '</nav></aside>';
+	}
+
+	/**
+	 * Renders a button that toggles a sidebar's open state via the
+	 * `basecoat:sidebar` CustomEvent that sidebar.js listens for.
+	 *
+	 * @sidebarId If empty, toggles the first sidebar on the page; otherwise
+	 *            targets the matching `<aside id="..."> element.
+	 * @action "toggle" (default), "open", or "close".
+	 */
+	public string function uiSidebarToggle(
+		string text = "",
+		string sidebarId = "",
+		string action = "toggle",
+		string icon = "menu",
+		string class = "btn-icon-ghost",
+		string ariaLabel = "Toggle sidebar"
+	) {
+		$validateEnum(arguments.action, "toggle,open,close", "uiSidebarToggle", "action");
+		var inner = "";
+		if (len(arguments.icon)) inner &= $uiLucideIcon(arguments.icon, 18);
+		if (len(arguments.text)) inner &= " " & arguments.text;
+
+		var dataAttrs = ' data-ui-sidebar-toggle="#arguments.action#"';
+		if (len(arguments.sidebarId)) dataAttrs &= ' data-ui-sidebar-target="#arguments.sidebarId#"';
+		var ariaAttr = len(arguments.text) ? "" : ' aria-label="#arguments.ariaLabel#"';
+		return '<button type="button" class="#arguments.class#"#dataAttrs##ariaAttr#>#inner#</button>';
 	}
 
 	// ==============================================

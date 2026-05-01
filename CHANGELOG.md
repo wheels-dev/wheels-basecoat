@@ -2,6 +2,21 @@
 
 All notable changes to this package will be documented in this file.
 
+## [2.1.0-rc.1] — 2026-05-01
+
+### Changed (BREAKING)
+- **`uiTabs` family rewritten** to emit the ARIA-role markup that basecoat-css 0.3.x styles and that basecoat-js's `tabs.js` drives. Previously emitted `<button class="tabs-trigger" data-value="...">` and `<div class="tabs-content" data-value="...">` — neither of which had matching CSS in 0.3.x, leaving the component visually unstyled and JS-unaware. New output uses `[role=tablist]` + `[role=tab]` (with `aria-controls`, `aria-selected`, `tabindex`) + `[role=tabpanel]` (with `aria-labelledby` + `hidden`). `uiTabs(defaultTab=)` is stashed in the request scope so child triggers and panels can auto-pair their IDs and active state. Helper API (function names, parameters) is unchanged.
+- **`uiDropdown` family rewritten** from `<details>/<summary>` to the popover-driven `.dropdown-menu` markup that basecoat-css 0.3.x styles and `dropdown-menu.js` drives. Previously emitted `<details><summary>...</summary><ul>...</ul></details>` which had no matching CSS in 0.3.x. New output: `<div class="dropdown-menu"><button aria-expanded aria-haspopup="menu">...</button><div data-popover aria-hidden="true"><div role="menu">...items...</div></div></div>`. Items now carry `role="menuitem"`, separators emit `<hr role="separator">`, and `uiDropdownItem` renders an `<a>` with `href` or a `<button>` without — both keyboard-navigable. New `disabled` arg toggles `aria-disabled`.
+- **`uiSidebar` family rewritten** to the semantic-element structure that basecoat-css 0.3.x styles and `sidebar.js` drives. Old API was `uiSidebar()` / `uiSidebarSection(title=)` / `uiSidebarItem()`. New API: `uiSidebar(side=, initialOpen=, initialMobileOpen=, breakpoint=, id=)` opens an `<aside class="sidebar" data-side="..." ...><nav>`, then `uiSidebarHeader/End`, `uiSidebarBody/End` (the scrollable `<section>`), `uiSidebarGroup(title=)/End` (the `<div role="group">` with optional `<h3>`), `uiSidebarItem(text=, href=, icon=, active=)` (now an `<a>` with `aria-current="page"` when active), `uiSidebarSeparator()`, and `uiSidebarFooter/End`. Apps using `uiSidebarSection`/`uiSidebarSectionEnd` must rename to `uiSidebarBody`/`uiSidebarBodyEnd` (plus `uiSidebarGroup` for the heading-bearing inner block).
+
+### Added
+- **`uiSidebarToggle(action=, sidebarId=)`** — CSP-safe toggle button that dispatches the `basecoat:sidebar` CustomEvent (open / close / toggle) which `sidebar.js` listens for. Handled via `data-ui-sidebar-toggle` data-attribute through the bundled `wheels-basecoat-ui.js` shim.
+- **Four new icons** in the Lucide map: `menu`, `home`, `file-text` (in addition to the v2.0 additions).
+- **`tests/BasecoatV21Spec.cfc`** — comprehensive snapshot-style coverage for the reworked Tabs / Dropdown / Sidebar markup and the new sidebar toggle.
+
+### Documentation
+- `index.cfm` rewritten as a structured documentation page (helper tables grouped by category, with v2 / v2.1 pills marking new helpers). The previous attempt at a live showcase doesn't work in the Wheels admin view scope (helpers aren't mixed in there); the README hosts the rendered examples instead.
+
 ## [2.0.0-rc.1] — 2026-05-01
 
 ### Added
