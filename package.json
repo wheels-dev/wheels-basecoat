@@ -1,6 +1,6 @@
 {
     "name": "wheels-basecoat",
-    "version": "2.3.0-rc.1",
+    "version": "2.4.0-rc.1",
     "author": "Wheels Core Team",
     "description": "Basecoat UI component helpers for Wheels. shadcn/ui-quality design with bundled CSS+JS, native Hotwire/Turbo integration, dark mode, and Wheels model-bound form fields.",
     "wheelsVersion": ">=4.0",

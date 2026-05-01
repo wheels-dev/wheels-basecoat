@@ -100,6 +100,11 @@
 		<tr><td><code>uiBoundSelect</code> <span class="pill pill-new">v2.3</span></td><td>Wheels-bound variant of <code>uiSelect</code> — same ergonomics as <code>uiBoundField</code>, with multiselect-array auto-serialization.</td></tr>
 		<tr><td><code>uiSlider</code> <span class="pill pill-new">v2.3</span></td><td>basecoat-styled range slider with --slider-value fill computed server-side. Optional output mirror kept live by wheels-basecoat-ui.js.</td></tr>
 		<tr><td><code>uiBoundSlider</code> <span class="pill pill-new">v2.3</span></td><td>Wheels-bound variant of <code>uiSlider</code>.</td></tr>
+		<tr><td><code>uiBoundCheckbox</code> <span class="pill pill-new">v2.4</span></td><td>Single boolean checkbox or switch with falsy-companion hidden input — params.&lt;obj&gt;.&lt;prop&gt; is always defined.</td></tr>
+		<tr><td><code>uiCheckboxGroup</code> + <code>uiBoundCheckboxGroup</code> <span class="pill pill-new">v2.4</span></td><td>Multi-checkbox collection (name="<name>[]"). Bound variant tolerates array/JSON/CSV on the model.</td></tr>
+		<tr><td><code>uiRadioGroup</code> + <code>uiBoundRadioGroup</code> <span class="pill pill-new">v2.4</span></td><td>Single-choice radio group with role="radiogroup".</td></tr>
+		<tr><td><code>uiErrorSummary</code> <span class="pill pill-new">v2.4</span></td><td>Drop-in replacement for errorMessagesFor() — renders model.allErrors() as a destructive alert with field-prefixed messages.</td></tr>
+		<tr><td><code>uiRating</code> <span class="pill pill-new">v2.4</span></td><td>1-N star rating widget. Read-only by default; pass name= for interactive form-input mode (CSS-only).</td></tr>
 	</table>
 
 	<pre><code>uiBoundField(objectName="post", property="title", required=true)
@@ -170,6 +175,7 @@ turboStreamEnd()</code></pre>
 		<li><strong>v2.1</strong>: tabs / dropdown / sidebar reworked to match basecoat-css 0.3.x's ARIA selectors and basecoat-js's contracts.</li>
 		<li><strong>v2.2</strong>: bundled <code>wheels-basecoat-extras.min.css</code> (breadcrumb + pagination defaults), <code>uiCommand</code> family + <code>uiCommandDialog</code> (⌘K-style palette), <code>uiSelect</code> (rich combobox).</li>
 		<li><strong>v2.3</strong>: <code>uiSlider</code> + <code>uiBoundSlider</code>, <code>uiSteps</code> family for wizards, <code>uiBoundSelect</code> Wheels integration for the rich combobox.</li>
+		<li><strong>v2.4</strong>: complete the form-binding round-trip — <code>uiBoundCheckbox</code> (with falsy-companion), <code>uiBoundCheckboxGroup</code>, <code>uiBoundRadioGroup</code>, <code>uiErrorSummary</code>, plus a <code>uiRating</code> star widget.</li>
 	</ul>
 
 	<h2>Links</h2>

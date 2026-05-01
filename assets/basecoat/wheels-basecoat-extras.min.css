@@ -41,3 +41,20 @@
   .ui-steps>li{padding-right:0}
   .ui-steps>li:not(:last-child)::after{display:none}
 }
+
+/* Rating (uiRating) — read-only display + interactive (radio-based, CSS-only). */
+.ui-rating{display:inline-flex;align-items:center;gap:.125rem;border:0;padding:0;margin:0;color:var(--color-muted-foreground)}
+.ui-rating .ui-rating-star{display:inline-flex;align-items:center}
+.ui-rating .ui-rating-star.is-filled svg{fill:var(--color-primary);color:var(--color-primary)}
+fieldset.ui-rating{flex-direction:row-reverse;justify-content:flex-end}
+fieldset.ui-rating input[type=radio]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+fieldset.ui-rating label{cursor:pointer;display:inline-flex;color:var(--color-muted-foreground);transition:color 120ms}
+fieldset.ui-rating label:hover,fieldset.ui-rating label:hover ~ label,fieldset.ui-rating input:checked ~ label{color:var(--color-primary)}
+fieldset.ui-rating label:hover svg,fieldset.ui-rating label:hover ~ label svg,fieldset.ui-rating input:checked ~ label svg{fill:var(--color-primary)}
+fieldset.ui-rating input:focus-visible + label{outline:2px solid var(--color-ring);outline-offset:2px;border-radius:.25rem}
+
+/* Radio button styling — basecoat-css 0.3.x ships .checkbox / .switch but no .radio rule. Mirror the checkbox sizing for the .radio class our group helpers emit. */
+.field input[type=radio]:not([role=switch]),.input[type=radio]:not([role=switch]),input[type=radio].radio{appearance:none;-webkit-appearance:none;width:1rem;height:1rem;border:1px solid var(--color-input);border-radius:9999px;background:var(--color-background);transition:box-shadow 120ms;cursor:pointer;flex-shrink:0}
+input[type=radio].radio:checked{border-color:var(--color-primary);background:radial-gradient(circle,var(--color-primary) 40%,var(--color-background) 45%)}
+input[type=radio].radio:focus-visible{outline:2px solid var(--color-ring);outline-offset:2px}
+input[type=radio].radio:disabled{cursor:not-allowed;opacity:.5}

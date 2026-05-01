@@ -2,6 +2,33 @@
 
 All notable changes to this package will be documented in this file.
 
+## [2.4.0-rc.1] — 2026-05-01
+
+### Added
+- **`uiBoundCheckbox(objectName, property, label, switch, description, ...)`** — single bound checkbox or switch. Solves the standard "unchecked checkbox submits nothing" footgun by emitting a hidden `value="0"` companion input under the same name BEFORE the checkbox, so `params.<obj>.<prop>` is always defined as `0` or `1`. Pass `switch=true` to render as a basecoat `.switch` instead.
+- **`uiCheckboxGroup(name, options, value, legend, description, inline)`** — multi-checkbox collection emitting `name="<name>[]"` so Wheels arrays the values. Same `options="value:Label[:disabled],..."` shape as `uiSelect` / `uiRadioGroup`. Tolerates a real CFML array, a JSON-array string, or a CSV string for `value`.
+- **`uiBoundCheckboxGroup(objectName, property, options, ...)`** — Wheels-bound variant. Auto-resolves the array/JSON/CSV value from `obj[property]`, humanizes the property into the legend.
+- **`uiRadioGroup(name, options, value, legend, description, inline)`** — radio-group container with `role="radiogroup"`. Same options syntax as the checkbox group.
+- **`uiBoundRadioGroup(objectName, property, options, ...)`** — Wheels-bound variant.
+- **`uiErrorSummary(model, title, description)`** — drop-in replacement for Wheels' `errorMessagesFor()`. Renders the model's full validation error list as a basecoat destructive alert with a bullet list of field-prefixed messages from `model.allErrors()`. Returns "" when no errors so it's safe to call unconditionally at the top of a form. Auto-pluralizes the title (`"1 error"` vs `"3 errors"`).
+- **`uiRating(value, max, name, ariaLabel, class)`** — 1-to-N star rating. Read-only display by default; pass `name=` to render as an interactive radio group (CSS-only highlight via the bundled extras stylesheet — no JS required). Renders highest-first internally so the CSS sibling combinator can light earlier stars on hover/check.
+- **One new icon**: `star`.
+- **`wheels-basecoat-extras.min.css` extended** with `.ui-rating` rules (display + interactive variants) plus a `.radio` rule (basecoat-css 0.3.x ships `.checkbox` and `.switch` but no radio styling — the new helpers add a sized circle that matches the checkbox treatment).
+
+### Form-binding round-trip is now complete
+With v2.4, every common form input type has a Wheels-bound helper that reads the current value, emits the canonical `<obj>[<prop>]` name, surfaces validation errors, and humanizes the label:
+
+| Input | Helper |
+|---|---|
+| Text / textarea / select / date / etc. | `uiBoundField` |
+| Rich combobox (search, multi-select) | `uiBoundSelect` |
+| Range slider | `uiBoundSlider` |
+| Single boolean | `uiBoundCheckbox` (with hidden companion for unchecked submissions) |
+| Multi-checkbox collection | `uiBoundCheckboxGroup` |
+| Single-choice radio | `uiBoundRadioGroup` |
+
+Plus `uiErrorSummary(model)` to render model-level validation results without manually iterating `errorMessagesFor()`.
+
 ## [2.3.0-rc.1] — 2026-05-01
 
 ### Added
