@@ -197,10 +197,8 @@ component output="false" {
 			writeOutput(
 				'<div class="#local.cls#" role="alert">' & chr(10)
 				& $uiLucideIcon(local.iconName, 16) & chr(10)
-				& '<div>' & chr(10)
 				& (len(arguments.title) ? '<h5>#arguments.title#</h5>' & chr(10) : '')
-				& (len(arguments.description) ? '<div>#arguments.description#</div>' & chr(10) : '')
-				& '</div>' & chr(10)
+				& (len(arguments.description) ? '<section><p>#arguments.description#</p></section>' & chr(10) : '')
 				& '</div>'
 			);
 		}
@@ -210,6 +208,11 @@ component output="false" {
 	// ==============================================
 	// CARDS
 	// ==============================================
+	//
+	// basecoat-css 0.3.x styles cards via the semantic-element selectors
+	// `.card > header`, `.card > section`, `.card > footer` (rather than the
+	// older `.card-header` / `.card-content` / `.card-footer` class hooks).
+	// These helpers emit the matching semantic markup.
 
 	/** Opens a Basecoat card. Close with uiCardEnd(). */
 	public string function uiCard(string class = "") {
@@ -218,18 +221,21 @@ component output="false" {
 		return '<div class="#cls#">';
 	}
 
-	/** Card header with optional title and description. Self-closing. */
+	/**
+	 * Card header with optional title and description. Self-closing.
+	 * Renders an <h2> for the title — basecoat-css 0.3.x targets `.card > header h2`
+	 * for the title typography. The `description` renders as a `<p>` sibling.
+	 */
 	public string function uiCardHeader(string title = "", string description = "", string class = "") {
 		var local = {};
-		local.cls = "card-header";
-		if (len(arguments.class)) local.cls &= " " & arguments.class;
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
 
 		savecontent variable="local.html" {
 			writeOutput(
-				'<div class="#local.cls#">' & chr(10)
-				& (len(arguments.title) ? '<h3>#arguments.title#</h3>' & chr(10) : '')
+				'<header#classAttr#>' & chr(10)
+				& (len(arguments.title) ? '<h2>#arguments.title#</h2>' & chr(10) : '')
 				& (len(arguments.description) ? '<p>#arguments.description#</p>' & chr(10) : '')
-				& '</div>'
+				& '</header>'
 			);
 		}
 		return trim(local.html);
@@ -237,24 +243,22 @@ component output="false" {
 
 	/** Opens card content section. Close with uiCardContentEnd(). */
 	public string function uiCardContent(string class = "") {
-		var cls = "card-content";
-		if (len(arguments.class)) cls &= " " & arguments.class;
-		return '<div class="#cls#">';
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<section#classAttr#>';
 	}
 
 	public string function uiCardContentEnd() {
-		return '</div>';
+		return '</section>';
 	}
 
 	/** Opens card footer section. Close with uiCardFooterEnd(). */
 	public string function uiCardFooter(string class = "") {
-		var cls = "card-footer";
-		if (len(arguments.class)) cls &= " " & arguments.class;
-		return '<div class="#cls#">';
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<footer#classAttr#>';
 	}
 
 	public string function uiCardFooterEnd() {
-		return '</div>';
+		return '</footer>';
 	}
 
 	public string function uiCardEnd() {

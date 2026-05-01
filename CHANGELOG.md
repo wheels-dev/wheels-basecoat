@@ -2,6 +2,15 @@
 
 All notable changes to this package will be documented in this file.
 
+## [Unreleased]
+
+### Changed (BREAKING)
+- `uiCardHeader`, `uiCardContent`, `uiCardFooter` (and matching `*End`) now emit semantic `<header>` / `<section>` / `<footer>` elements instead of `<div class="card-header">` / `<div class="card-content">` / `<div class="card-footer">`. `uiCardHeader` also emits `<h2>` for the title (was `<h3>`). Reason: basecoat-css 0.3.x dropped the older class hooks and now styles cards exclusively via the semantic-element selectors `.card > header`, `.card > section`, `.card > footer`, with the title typography targeted at `.card > header h2`. Apps using the unmodified helpers under basecoat-css 0.3.x rendered cards with no internal padding, no header/title typography, and no flex footer — the visible bug surfaced as edge-to-edge text inside an outlined box. Helper API (function names, parameters) is unchanged. Apps that wrote custom CSS targeting `.card-header` / `.card-content` / `.card-footer` will need to re-target the semantic selectors. (Discovered during a Wheels Tutorial fresh-VM bake against basecoat-css 0.3.11.)
+- `uiAlert` no longer wraps the title and description in an extra `<div>` and now renders the description inside a `<section>` rather than a nested `<div>`. The new output is `<div class="alert"><svg/><h5>Title</h5><section><p>Description</p></section></div>`. Reason: basecoat-css 0.3.x targets `.alert > h5` (or h2-h6 / strong / `[data-title]`) and `.alert > section` as direct children of the alert; the previous wrapper-div nesting prevented those rules from matching, which left alert titles unstyled and descriptions un-padded. Helper API is unchanged.
+
+### Documentation
+- Updated the Cards and Alerts markup samples in `CLAUDE.md` to reflect the basecoat-css 0.3.x semantic-element structure. Future helpers extending these patterns should follow the new shape.
+
 ## [1.0.5] — 2026-04-30
 
 ### Changed

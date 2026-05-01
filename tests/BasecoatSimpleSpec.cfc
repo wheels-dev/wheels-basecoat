@@ -86,11 +86,12 @@ component extends="wheels.WheelsTest" {
 
 			describe("uiAlert", () => {
 
-				it("renders alert with title and description", () => {
+				it("renders alert with title and description as direct children (no extra wrapper div)", () => {
 					var html = variables.bc.uiAlert(title="Heads up", description="Something happened");
 					expect(html).toMatch('role="alert"');
 					expect(html).toMatch('<h5>Heads up</h5>');
-					expect(html).toMatch('<div>Something happened</div>');
+					// basecoat-css 0.3.x targets `.alert > section` for the description body
+					expect(html).toMatch('<section><p>Something happened</p></section>');
 				});
 
 				it("renders destructive variant with alert-destructive class", () => {
@@ -112,25 +113,41 @@ component extends="wheels.WheelsTest" {
 					expect(html).toMatch('class="card"');
 				});
 
-				it("renders card header with title and description", () => {
+				it("renders card header as a semantic <header> with <h2> title", () => {
 					var html = variables.bc.uiCardHeader(title="My Card", description="A subtitle");
-					expect(html).toMatch('class="card-header"');
-					expect(html).toMatch('<h3>My Card</h3>');
+					// basecoat-css 0.3.x styles `.card > header` and `.card > header h2`
+					expect(html).toMatch('<header>');
+					expect(html).toMatch('<h2>My Card</h2>');
 					expect(html).toMatch('<p>A subtitle</p>');
+					expect(html).toMatch('</header>');
 				});
 
-				it("renders card content section", () => {
-					var html = variables.bc.uiCardContent();
-					expect(html).toMatch('class="card-content"');
+				it("uiCardContent renders a <section> open tag", () => {
+					expect(variables.bc.uiCardContent()).toBe('<section>');
 				});
 
-				it("renders card footer section", () => {
-					var html = variables.bc.uiCardFooter();
-					expect(html).toMatch('class="card-footer"');
+				it("uiCardContentEnd renders a </section> close tag", () => {
+					expect(variables.bc.uiCardContentEnd()).toBe('</section>');
+				});
+
+				it("uiCardFooter renders a <footer> open tag", () => {
+					expect(variables.bc.uiCardFooter()).toBe('<footer>');
+				});
+
+				it("uiCardFooterEnd renders a </footer> close tag", () => {
+					expect(variables.bc.uiCardFooterEnd()).toBe('</footer>');
 				});
 
 				it("uiCardEnd returns closing div", () => {
 					expect(variables.bc.uiCardEnd()).toBe('</div>');
+				});
+
+				it("forwards an optional class to the <section> content wrapper", () => {
+					expect(variables.bc.uiCardContent(class="px-0")).toBe('<section class="px-0">');
+				});
+
+				it("forwards an optional class to the <footer> wrapper", () => {
+					expect(variables.bc.uiCardFooter(class="border-t")).toBe('<footer class="border-t">');
 				});
 
 			});

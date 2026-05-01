@@ -86,26 +86,33 @@ All `ui*` helpers MUST generate markup matching these patterns from basecoatui.c
 ```
 
 ### Alerts
+basecoat-css 0.3.x styles `.alert > h5` (or h2-h6 / strong / `[data-title]`) for the
+title and `.alert > section` for the description body — both as direct children of
+the alert element, alongside the icon. Don't wrap title+description in an extra `<div>`.
+
 ```html
 <div class="alert" role="alert">
     <svg><!-- icon --></svg>
-    <div>
-        <h5>Title</h5>
-        <div>Description</div>
-    </div>
+    <h5>Title</h5>
+    <section><p>Description</p></section>
 </div>
 <div class="alert alert-destructive" role="alert">...</div>
 ```
 
 ### Cards
+basecoat-css 0.3.x styles cards via the semantic-element selectors
+`.card > header`, `.card > section`, `.card > footer` (it dropped the older
+`.card-header` / `.card-content` / `.card-footer` class hooks). The header's
+title is targeted as `.card > header h2`, so emit `<h2>` for the title.
+
 ```html
 <div class="card">
-    <div class="card-header">
-        <h3>Title</h3>
+    <header>
+        <h2>Title</h2>
         <p>Description</p>
-    </div>
-    <div class="card-content"><!-- content --></div>
-    <div class="card-footer"><!-- actions --></div>
+    </header>
+    <section><!-- content --></section>
+    <footer><!-- actions --></footer>
 </div>
 ```
 
