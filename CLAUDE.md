@@ -1,284 +1,218 @@
-# wheels-basecoat
+# wheels-basecoat (for AI coding assistants)
 
-## What This Is
+You are writing CFML in a Wheels 4 application that has the **wheels-basecoat** package installed. This document tells you everything you need to know to write idiomatic, correct code that uses the package's helpers.
 
-A Wheels framework package providing CFML view helpers that generate Basecoat UI component markup — shadcn/ui-quality design using plain HTML + Tailwind CSS classes. No React, no build step. Works with or without wheels-hotwire.
+## Read order
 
-This package is part of the Wheels first-party package collection, hosted in the main Wheels repository under `packages/basecoat/`. Activate by copying to `vendor/basecoat/`.
+1. **This file** — package architecture, helper inventory, the rules of the road.
+2. **`.ai/PATTERNS.md`** — when to use which helper. Decision trees.
+3. **`.ai/PITFALLS.md`** — known footguns. Skim before writing CFML.
+4. **`.ai/EXAMPLES.md`** — scenario-driven recipes. Find the closest match before composing your own.
+5. **`.ai/SCAFFOLDS.md`** — copy-paste templates for index / show / new / edit / login / signup / dashboard pages.
+6. **`.ai/HELPERS.md`** — formal signature reference for every helper.
 
-## Package Architecture
+## What this package is
 
-Standard Wheels package. The main CFC (`Basecoat.cfc`) contains `init()` and all public methods. Wheels injects every public method into the controller scope via PackageLoader. Because Wheels views execute in the controller's `variables` scope, controller mixins surface transitively in views — call them as `#functionName()#` in views.
+A Wheels 4.0+ package that ships:
 
-## File Structure
+- **Bundled `basecoat-css` 0.3.11** — the upstream CSS framework, pinned to a known-good version, copied into `assets/basecoat/basecoat.min.css`.
+- **Bundled `basecoat-js`** — the upstream interactive component scripts (`tabs.js`, `dropdown-menu.js`, `popover.js`, `select.js`, `command.js`, `sidebar.js`, `toast.js`) plus an `all.min.js` aggregate.
+- **`wheels-basecoat-ui.js`** — a tiny CSP-safe shim for dialog open/close + theme toggle + sidebar toggle + slider live mirror, all delegated via `data-ui-*` attributes (no inline event handlers).
+- **`wheels-basecoat-extras.min.css`** — visual defaults for components basecoat-css doesn't ship CSS for (breadcrumb, pagination, steps, rating, radio).
+- **~80 CFML helpers** that emit basecoat-styled HTML, in a single `Basecoat.cfc`.
+- **Argument validation** that throws `WheelsBasecoat.InvalidArgument` with helpful detail for unsupported variant/size/type values.
+
+The whole point: a Wheels developer never has to think about basecoat-css's class names or basecoat-js's contracts. They write `#uiBoundField(objectName="post", property="title")#` and get a fully styled, model-bound, error-aware form field.
+
+## Package architecture
+
+Standard Wheels package. The main CFC (`Basecoat.cfc`) contains `init()` and all public helpers. Wheels' `PackageLoader` injects every public method into the controller scope via the `provides.mixins: "controller"` declaration in `package.json`. Because Wheels views execute in the controller's `variables` scope, the helpers surface transitively in views — call them as `#functionName()#` in any view file.
 
 ```
-packages/basecoat/
-├── CLAUDE.md              # This file (Claude Code reads first)
-├── Basecoat.cfc           # Main package CFC — ALL helpers here
-├── package.json           # Package manifest
-├── index.cfm              # Package UI page (Wheels debug panel)
-├── box.json               # CommandBox package metadata
-└── .ai/
-    └── ARCHITECTURE.md    # Full architecture doc (long-form context)
+wheels-basecoat/
+├── CLAUDE.md                 # This file (AI tools read first)
+├── README.md                 # Human-facing docs
+├── CHANGELOG.md
+├── Basecoat.cfc              # Main package CFC — every helper lives here
+├── package.json              # Wheels package manifest
+├── box.json                  # CommandBox metadata + install hooks
+├── index.cfm                 # Doc page rendered at /wheels/packages/wheels-basecoat
+├── .ai/
+│   ├── HELPERS.md            # Formal signature reference (every helper)
+│   ├── EXAMPLES.md           # Scenario-driven recipes
+│   ├── SCAFFOLDS.md          # Copy-paste page templates
+│   ├── PATTERNS.md           # When to use which helper
+│   ├── PITFALLS.md           # Known footguns
+│   └── ARCHITECTURE.md       # Long-form design context
+├── assets/basecoat/
+│   ├── basecoat.min.css      # Bundled basecoat-css 0.3.11
+│   ├── wheels-basecoat-extras.min.css  # Our additions
+│   └── js/
+│       ├── all.min.js        # All basecoat-js modules in one file
+│       ├── basecoat.min.js   # Just the registration kernel
+│       ├── tabs.min.js / dropdown-menu.min.js / popover.min.js / select.min.js
+│       ├── command.min.js / sidebar.min.js / toast.min.js
+│       └── wheels-basecoat-ui.min.js   # Our CSP-safe shim
+├── examples/showcase/        # Mountable live-render showcase (see "Showcase" below)
+├── scripts/install.cfm       # CommandBox install hook (publishes assets to public/)
+└── tests/
+    ├── BasecoatSimpleSpec.cfc
+    ├── BasecoatComplexSpec.cfc
+    ├── BasecoatV2Spec.cfc / V21Spec / V22Spec / V23Spec / V24Spec
+    └── BasecoatV30Spec.cfc
 ```
 
-### Single CFC Requirement
+## Setup
 
-All public helper functions must be methods in `Basecoat.cfc`. Wheels packages inject methods from **one CFC only** (the one matching the directory name).
+The first thing every Wheels app needs in its layout:
 
-## Coding Conventions
-
-- CFScript syntax (`component { }`, `function name() { }`)
-- Typed function parameters with defaults: `string name = "default"`
-- `var local = {};` for local variable scopes
-- Function names: camelCase with `ui` prefix for components, `basecoat` prefix for infrastructure
-- View helpers return strings
-- Build multi-line HTML via `savecontent variable="local.html" { writeOutput(...); }`
-- Double quotes for HTML attributes
-- Generate unique IDs via `replace(left(createUUID(), 8), "-", "", "all")` when caller omits ID
-
-### Naming Patterns
-
-- `basecoat*` prefix: infrastructure (basecoatIncludes)
-- `ui*` prefix: component open tags (uiButton, uiCard, uiDialog)
-- `ui*End` suffix: closing tags for block components (uiCardEnd, uiDialogEnd)
-- `ui*Header/Content/Footer/Body` + End: sub-section helpers
-- `$ui*` prefix (private): internal utilities ($uiLucideIcon, $uiBuildId)
-
-## Turbo/Hotwire Awareness
-
-This plugin does NOT depend on wheels-hotwire, but is **aware** of Turbo patterns:
-- `uiButton()` accepts `turboConfirm` and `turboMethod` args (outputs `data-turbo-confirm` / `data-turbo-method` attributes) — these are inert without Turbo present
-- `uiButton()` accepts `close=true` for dialog dismiss (native `<dialog>` API, no Turbo needed)
-- Components generate standard HTML that works inside `<turbo-frame>` elements without modification
-
-## Basecoat Markup Reference
-
-All `ui*` helpers MUST generate markup matching these patterns from basecoatui.com v0.3.x:
-
-### Buttons
-```html
-<button class="btn">Primary</button>
-<button class="btn-secondary">Secondary</button>
-<button class="btn-destructive">Destructive</button>
-<button class="btn-outline">Outline</button>
-<button class="btn-ghost">Ghost</button>
-<button class="btn-link">Link</button>
-<button class="btn-sm">Small</button>
-<button class="btn-lg-destructive">Large Destructive</button>
-<button class="btn-icon-outline"><svg>...</svg></button>
-<button class="btn-sm-icon-destructive"><svg>...</svg></button>
-<a href="/path" class="btn-secondary">Link as button</a>
+```cfm
+<head>
+    <cfoutput>
+        ##basecoatThemeScript()##           <!-- pre-paint theme to avoid FOUC -->
+        ##csrfMetaTags()##
+        ##basecoatIncludes()##              <!-- loads CSS + JS + ui shim -->
+    </cfoutput>
+</head>
+<body>
+    ...
+    <cfoutput>##basecoatFlashToasts()##</cfoutput>  <!-- renders flash() as toasts -->
+</body>
 ```
 
-**Class construction:** Parts joined by hyphens in order: `btn` + size? + icon? + variant?
-- Primary uses bare `btn` (no variant suffix)
-- Default size (md) omits size prefix
-- Examples: `btn`, `btn-outline`, `btn-sm`, `btn-sm-outline`, `btn-icon`, `btn-icon-outline`, `btn-lg-icon-destructive`
+That's it. Every helper is now in scope.
 
-### Badges
-```html
-<span class="badge">Default</span>
-<span class="badge-secondary">Secondary</span>
-<span class="badge-destructive">Destructive</span>
-<span class="badge-outline">Outline</span>
-```
+## The form-binding family — the killer feature
 
-### Alerts
-basecoat-css 0.3.x styles `.alert > h5` (or h2-h6 / strong / `[data-title]`) for the
-title and `.alert > section` for the description body — both as direct children of
-the alert element, alongside the icon. Don't wrap title+description in an extra `<div>`.
+If the form references a Wheels model, **always prefer the `uiBound*` family** over the unbound primitives. The bound helpers auto-resolve value, name (`<obj>[<prop>]`), validation error, and humanized label from the controller-scoped model object.
 
-```html
-<div class="alert" role="alert">
-    <svg><!-- icon --></svg>
-    <h5>Title</h5>
-    <section><p>Description</p></section>
-</div>
-<div class="alert alert-destructive" role="alert">...</div>
-```
+| Input type | Unbound | Bound |
+|---|---|---|
+| Text / textarea / select / checkbox / switch / date / etc. | `uiField` | `uiBoundField` |
+| Rich combobox (search, multi-select) | `uiSelect` | `uiBoundSelect` |
+| Range slider | `uiSlider` | `uiBoundSlider` |
+| Single boolean | `uiField(type=checkbox)` | `uiBoundCheckbox` |
+| Multi-checkbox collection | `uiCheckboxGroup` | `uiBoundCheckboxGroup` |
+| Single-choice radio | `uiRadioGroup` | `uiBoundRadioGroup` |
+| Model-level error rollup | n/a | `uiErrorSummary(model)` |
 
-### Cards
-basecoat-css 0.3.x styles cards via the semantic-element selectors
-`.card > header`, `.card > section`, `.card > footer` (it dropped the older
-`.card-header` / `.card-content` / `.card-footer` class hooks). The header's
-title is targeted as `.card > header h2`, so emit `<h2>` for the title.
+Idiomatic Wheels-bound form:
 
-```html
-<div class="card">
-    <header>
-        <h2>Title</h2>
-        <p>Description</p>
-    </header>
-    <section><!-- content --></section>
-    <footer><!-- actions --></footer>
-</div>
-```
+```cfm
+<cfoutput>
+##uiErrorSummary(post)##
+##startFormTag(action=isEdit ? "update" : "create", key=post.id ?: "")##
+    ##uiBoundField(objectName="post", property="title", required=true)##
+    ##uiBoundField(objectName="post", property="body", type="textarea", rows=10)##
+    ##uiBoundField(objectName="post", property="status", type="select",
+                   options="draft:Draft,published:Published,archived:Archived")##
+    ##uiBoundCheckbox(objectName="post", property="featured", switch=true)##
 
-### Dialogs (Modals)
-Native `<dialog>` with `showModal()`:
-```html
-<button type="button" onclick="document.getElementById('dlg-id').showModal()" class="btn-outline">Open</button>
-
-<dialog id="dlg-id" class="dialog w-full sm:max-w-[425px] max-h-[612px]"
-        aria-labelledby="dlg-id-title" aria-describedby="dlg-id-desc"
-        onclick="if (event.target === this) this.close()">
-    <div>
-        <header>
-            <h2 id="dlg-id-title">Title</h2>
-            <p id="dlg-id-desc">Description</p>
-        </header>
-        <section><!-- content --></section>
-        <footer><!-- actions --></footer>
-        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
+    <div class="flex justify-end gap-2 pt-2">
+        <a href="##urlFor(route='posts')##" class="btn-ghost" data-turbo-frame="_top">Cancel</a>
+        ##uiButton(text=isEdit ? "Save" : "Publish", type="submit", icon="check")##
     </div>
-</dialog>
+##endFormTag()##
+</cfoutput>
 ```
 
-### Form Fields
-```html
-<!-- Standard text input -->
-<div class="grid gap-2">
-    <label for="fld-id">Label</label>
-    <input type="text" id="fld-id" name="model[field]" class="input" />
-</div>
+## The Hotwire / Turbo story
 
-<!-- With description -->
-<div class="grid gap-2">
-    <label for="fld-id">Label</label>
-    <input type="text" id="fld-id" name="model[field]" class="input" />
-    <p class="text-sm text-muted-foreground">Description</p>
-</div>
+The package is Hotwire-aware but Hotwire-independent:
 
-<!-- With error -->
-<div class="grid gap-2">
-    <label for="fld-id">Label</label>
-    <input type="text" id="fld-id" name="model[field]"
-           class="input border-destructive" aria-invalid="true"
-           aria-describedby="fld-id-error" />
-    <p id="fld-id-error" class="text-sm text-destructive">Error message</p>
-</div>
+- **Form submissions inside `<turbo-frame>`** — frame-scope is automatic; the controller just `renderPartial("form", post=post, layout=false)` on validation failure and Turbo swaps the frame.
+- **`turboStream(action=, target=)` + `turboStreamEnd()` + `turboStreamHeader()`** — compose Turbo Stream responses from CFML. `turboStreamHeader()` is **mandatory** for the `Content-Type: text/vnd.turbo-stream.html` header that Turbo 8 strictly requires.
+- **`uiButton(turboConfirm=, turboMethod=)`** — emits `data-turbo-confirm` / `data-turbo-method` so destructive actions get a confirm and Turbo treats the link as the right verb.
+- **`buttonTo(method="delete", inputClass="btn-destructive", data_turbo_confirm="...", data_turbo_stream="true")`** — Wheels' `buttonTo` converts `data_turbo_*` underscore-args to hyphen-attributes, which is how you wire CSRF + Turbo Stream + method-spoofing in one call.
 
-<!-- Textarea -->
-<textarea id="fld-id" name="model[field]" class="textarea" rows="4"></textarea>
+## The dark mode story
 
-<!-- Select -->
-<select id="fld-id" name="model[field]" class="select">
-    <option value="">Choose...</option>
-    <option value="a">A</option>
-</select>
-
-<!-- Checkbox (label AFTER input) -->
-<div class="flex items-center gap-2">
-    <input type="checkbox" id="fld-id" name="model[field]" class="checkbox" />
-    <label for="fld-id">Label</label>
-</div>
-
-<!-- Switch (label AFTER input) -->
-<div class="flex items-center gap-2">
-    <input type="checkbox" id="fld-id" name="model[field]" class="switch" role="switch" />
-    <label for="fld-id">Label</label>
-</div>
+```cfm
+<head>
+    <cfoutput>##basecoatThemeScript()##</cfoutput>  <!-- runs synchronously, before paint -->
+    <cfoutput>##basecoatIncludes()##</cfoutput>
+</head>
+<body>
+    <cfoutput>##uiThemeToggle()##</cfoutput>
+</body>
 ```
 
-### Tables
-```html
-<div class="table-container">
-    <table class="table">
-        <thead><tr><th>Header</th></tr></thead>
-        <tbody><tr><td>Cell</td></tr></tbody>
-    </table>
-</div>
+`basecoatThemeScript()` reads `localStorage["basecoat:theme"]` (or falls back to `prefers-color-scheme: dark`) and applies `.dark` to `<html>` BEFORE first paint. `uiThemeToggle()` renders a sun/moon button that flips the class and persists. The toggle is delegated via `data-ui-theme-toggle` (handled by `wheels-basecoat-ui.js`) — no inline JS, CSP-safe.
+
+## Convention-over-configuration helpers (v3.0)
+
+The shortest path from "I have a model" to "rendered UI":
+
+```cfm
+<!-- Auto-build a form from the model's properties -->
+##uiResourceForm(post)##
+
+<!-- Auto-build a table from a Wheels query result -->
+##uiResourceTable(posts, columns="title,status,publishedAt")##
+
+<!-- Pagination UI from a paginated query -->
+##uiPaginationFor(posts, baseUrl=urlFor(route="posts"))##
 ```
 
-### Tabs (uses Basecoat JS)
-```html
-<div class="tabs" data-default="tab1">
-    <div class="tabs-list">
-        <button class="tabs-trigger" data-value="tab1">Tab 1</button>
-        <button class="tabs-trigger" data-value="tab2">Tab 2</button>
-    </div>
-    <div class="tabs-content" data-value="tab1">Content 1</div>
-    <div class="tabs-content" data-value="tab2">Content 2</div>
-</div>
-```
+These read property metadata from the model (`enum()`, validations, types) and render the matching helpers. Use them for admin scaffolds and quick prototypes. For polished public-facing pages, hand-author with the bound helpers above.
 
-### Progress
-```html
-<div class="progress"><div class="progress-indicator" style="width: 60%"></div></div>
-```
+## Helper categories at a glance
 
-### Skeleton
-```html
-<div class="skeleton h-4 w-[250px]"></div>
-```
+| Category | Helpers |
+|---|---|
+| **Setup** | `basecoatIncludes`, `basecoatThemeScript`, `basecoatFlashToasts` |
+| **Buttons & display** | `uiButton`, `uiButtonGroup` (+sep + end), `uiBadge`, `uiAvatar`, `uiKbd`, `uiIcon`, `uiSpinner`, `uiSkeleton`, `uiProgress`, `uiSeparator` |
+| **Feedback** | `uiAlert`, `uiCallout`, `uiToast`, `uiToaster`, `uiTooltip`, `uiEmptyState` |
+| **Containers** | `uiCard` (+ header/content/footer + ends), `uiFieldset` (+end), `uiAccordion` (+ item + ends), `uiTimeline` (+ item + end) |
+| **Overlays** | `uiDialog` (+footer + end), `uiPopover` (+ trigger + content + ends), `uiCommand` family + `uiCommandDialog` |
+| **Forms (unbound)** | `uiField`, `uiSelect`, `uiSlider`, `uiCheckboxGroup`, `uiRadioGroup`, `uiTagInput`, `uiFileUpload`, `uiDatePicker`, `uiRating` |
+| **Forms (Wheels-bound)** | `uiBoundField`, `uiBoundSelect`, `uiBoundSlider`, `uiBoundCheckbox`, `uiBoundCheckboxGroup`, `uiBoundRadioGroup`, `uiBoundFile`, `uiErrorSummary` |
+| **Tables** | `uiTable` family + `uiResourceTable` |
+| **Navigation** | `uiTabs`, `uiDropdown`, `uiBreadcrumb`, `uiPagination`, `uiPaginationFor`, `uiSidebar` family + `uiSidebarToggle`, `uiSteps` family |
+| **Code display** | `uiCodeBlock` |
+| **Theme** | `uiThemeToggle` |
+| **Hotwire** | `turboStream`, `turboStreamEnd`, `turboStreamHeader` |
+| **Wheels conventions** | `uiResourceForm`, `uiResourceTable`, `uiPaginationFor` |
 
-### Spinner
-```html
-<div class="spinner"></div>
-```
+For the formal signature of any helper, see `.ai/HELPERS.md`.
 
-### Tooltip
-```html
-<span class="tooltip" data-tip="Tooltip text"><button class="btn">Hover</button></span>
-```
+## Coding rules
 
-### Separator
-```html
-<hr class="separator" />
-```
+These are non-negotiable when generating CFML for this codebase:
 
-## Implementation Order
+1. **CFML's null-coalescing operator is `?:` not `??`.** Lucee 7 silently fails to compile the whole component on `??` and every helper goes undefined. ([Pitfall #1](.ai/PITFALLS.md))
 
-### Phase 1: Infrastructure + Simple Components
-1. `init()` — version, metadata
-2. `basecoatIncludes()` — Basecoat CSS + Alpine.js script tags
-3. `uiButton()` — **reference implementation** (already provided in seed)
-4. `uiBadge()` — simple single-element (already provided in seed)
-5. `uiIcon()` — public wrapper around `$uiLucideIcon()`
-6. `uiSpinner()`, `uiSkeleton()`, `uiProgress()` — simple single-element helpers
-7. `uiSeparator()` — trivial `<hr>`
-8. `uiTooltip()` / `uiTooltipEnd()`
+2. **Inside `<cfoutput>`, `##` is the escape for a literal `#`.** Three or five hashes are unbalanced and will throw "Syntax Error, Invalid Construct". When showing source code in a `<pre><code>` block, either close `</cfoutput>` around it or use exactly four hashes (`##...##`). ([Pitfall #2](.ai/PITFALLS.md))
 
-### Phase 2: Block Components
-9. `uiAlert()` — self-closing block (title + description, no End needed)
-10. `uiCard()` / `uiCardHeader()` / `uiCardContent()` / `uiCardFooter()` / `uiCardContentEnd()` / `uiCardFooterEnd()` / `uiCardEnd()`
-11. `uiDialog()` / `uiDialogFooter()` / `uiDialogEnd()`
+3. **A `_form.cfm` partial that's wrapped in `<turbo-frame>` must keep that frame as the OUTERMOST element.** Don't add chrome (breadcrumbs, page header, outer card) inside the partial — those go in `new.cfm` / `edit.cfm` around the partial. On validation failure the controller returns the partial alone for Turbo to swap, and any chrome inside would render nested on the existing page. ([Pitfall #3](.ai/PITFALLS.md))
 
-### Phase 3: Form Components
-12. `uiField()` — the big one: label + input + description + error, with type switching (text, email, textarea, select, checkbox, switch, etc.)
+4. **Links inside a `<turbo-frame>` are scoped to that frame.** Cancel links and breadcrumb back-links inside a form frame must carry `data-turbo-frame="_top"` to break out, or Turbo will look for the same frame in the navigation target and surface "Content missing". ([Pitfall #4](.ai/PITFALLS.md))
 
-### Phase 4: Complex Components
-13. `uiTable()` / `uiTableHeader()` / `uiTableBody()` / `uiTableRow()` / `uiTableHead()` / `uiTableCell()` + all End variants
-14. `uiTabs()` / `uiTabList()` / `uiTabTrigger()` / `uiTabContent()` + End variants
-15. `uiDropdown()` / `uiDropdownItem()` / `uiDropdownSeparator()` / `uiDropdownEnd()`
-16. `uiPagination()`
+5. **Wheels' `buttonTo` puts kwargs on the FORM by default.** To put a class on the inner `<button>`, use `inputClass="..."`. Hyphenated attributes like `data-turbo-confirm` must be written as `data_turbo_confirm` (underscore form) — Wheels converts to hyphens. ([Pitfall #5](.ai/PITFALLS.md))
 
-### Phase 5: Layout Components
-17. `uiSidebar()` family
-18. `uiBreadcrumb()` family
+6. **`turboStreamHeader()` is mandatory at the top of any partial that emits `<turbo-stream>` elements.** Turbo 8 won't process the stream without `Content-Type: text/vnd.turbo-stream.html`. ([Pitfall #6](.ai/PITFALLS.md))
 
-## Icon System
+7. **`Posts.cfc::config()` must call `super.config()` if it overrides config.** Otherwise `protectsFromForgery()` from the base controller never runs — non-GET endpoints still validate CSRF (Comments etc.), but Wheels' `startFormTag` won't emit the `authenticityToken` hidden field, and the form submission 500s. ([Pitfall #7](.ai/PITFALLS.md))
 
-`$uiLucideIcon(name, size, strokeWidth)` is a private method that returns SVG strings for Lucide icons. The seed includes ~12 common icons. Claude Code should extend the icon map as components need them. Each icon is a struct entry mapping name → SVG inner paths.
+8. **Always prefer the bound helpers** (`uiBoundField`, `uiBoundSelect`, etc.) when there's a model object in scope. They handle name-namespacing, value pre-population, error rendering, and label humanization in one call.
 
-`uiIcon()` is the public wrapper:
-```cfml
-#uiIcon(name="trash", size=16)#
-#uiIcon(name="plus", size=20, class="text-muted-foreground")#
-```
+9. **`uiCommand` and `uiCommandDialog` items use `<button role="menuitem">` (or `<a>` with `href`).** Use `data-keep-command-open` on items inside a command-dialog that should keep the modal open after a click (e.g. theme toggles).
 
-## Testing
+10. **Argument validation throws on typos.** `uiButton(variant="primay")` raises `WheelsBasecoat.InvalidArgument` with the allowed list. If you see this error in a stack trace, fix the call site — don't catch and continue.
 
-Test helpers by verifying output strings. Focus on:
-- Basecoat class construction (especially compound button classes: `btn-sm-icon-destructive`)
-- ARIA attributes on dialogs (labelledby, describedby) and form fields (invalid, describedby)
-- Unique ID generation when IDs are omitted
-- Error state rendering in `uiField()` (border-destructive class, error paragraph)
-- Checkbox/switch layout (flex row, label after input)
-- Standard vs. checkbox/switch field layout differences
+## Mini-glossary
+
+- **basecoat-css** — the upstream CSS framework (https://basecoatui.com). Pinned to 0.3.11.
+- **basecoat-js** — the upstream component-interaction scripts (tabs, dropdowns, popovers, etc.).
+- **wheels-basecoat-ui.js** — our small CSP-safe shim that handles dialog/theme/sidebar/slider via `data-ui-*` delegation.
+- **extras CSS** — `wheels-basecoat-extras.min.css`, our companion stylesheet for components basecoat-css doesn't ship CSS for.
+- **showcase** — the `examples/showcase/` mountable controller. Run it in your Wheels app to get a live `/basecoat-showcase` URL with every helper rendered alongside its source. Doubles as a visual regression target.
+- **PackageLoader** — Wheels' system for mixing package helpers into controller scope.
+- **frame submission** — the Turbo pattern where a form inside `<turbo-frame id="X">` swaps just that frame on response.
+
+## When in doubt
+
+- Read `.ai/EXAMPLES.md`. It has a recipe for almost every common scenario.
+- Read `.ai/PITFALLS.md`. The bugs that bite hardest are listed there with fixes.
+- The package version is in `package.json::version`. Helpers added in a specific version are tagged in `index.cfm` with `vX.Y` pills.
+- Run the test suite (`tests/Basecoat*Spec.cfc`) — it's the executable spec for every helper's expected output.
