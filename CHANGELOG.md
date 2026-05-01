@@ -2,7 +2,37 @@
 
 All notable changes to this package will be documented in this file.
 
-## [Unreleased]
+## [2.0.0-rc.1] — 2026-05-01
+
+### Added
+- **Bundled assets.** The package now ships `assets/basecoat/basecoat.min.css` and the basecoat-js component scripts (`all.min.js`, plus per-component modules for tabs/dropdown/popover/select/command/sidebar/toast). Pinned to basecoat-css 0.3.11. Recommended install: `cp -r vendor/wheels-basecoat/assets/basecoat public/assets/basecoat`.
+- **`uiBoundField(objectName, property)`** — model-bound form field that mirrors Wheels' built-in `textField` ergonomics. Auto-resolves the input value from `obj[property]`, the error message from `obj.errorsOn(property)[1].message`, the input `name` (`<objectName>[<property>]`), and the `<label>` text (humanized from the property name — `firstName` → `First name`). Includes datetime coercion to ISO format for `type="date"` / `datetime-local` / `time`. Throws `WheelsBasecoat.ObjectNotFound` if the named object isn't in scope.
+- **`uiToast` + `uiToaster` + `basecoatFlashToasts`** — toast notifications driven by basecoat-js's `toast.js`. `basecoatFlashToasts()` is a one-call drop-in that reads Wheels' `flash()` map and renders a toaster + a toast per entry, mapping the standard keys (`success`, `error`, `warning`, `info`, `notice`) to the matching variant.
+- **`uiPopover` family** (`uiPopover` / `uiPopoverTrigger` / `uiPopoverContent` / `uiPopoverContentEnd` / `uiPopoverEnd`) — driven by basecoat-js's `popover.js`. Toggles `aria-expanded` on the trigger and `aria-hidden` on the content, dismisses on outside click + Escape.
+- **`uiAvatar`** — image avatar with text-initial fallback, configurable size.
+- **`uiKbd`** — keyboard key indicator for menu labels and command palettes.
+- **`uiButtonGroup` family** (`uiButtonGroup` / `uiButtonGroupSeparator` / `uiButtonGroupEnd`) — joined-border button cluster, horizontal or vertical.
+- **`uiFieldset` / `uiFieldsetEnd`** — `<fieldset>` wrapper with optional legend + description, styled by basecoat-css's `.fieldset` rule.
+- **`uiThemeToggle` + `basecoatThemeScript`** — light/dark theme toggle with localStorage persistence and `prefers-color-scheme` fallback. Pre-paint script applies the saved theme synchronously to avoid the FOUC.
+- **`turboStream` / `turboStreamEnd` / `turboStreamHeader`** — compose Turbo Stream responses from CFML. `turboStream(action="remove", target="x")` returns a self-closing element; content actions (`append`, `prepend`, `replace`, etc.) open `<turbo-stream><template>` and pair with `turboStreamEnd()`. `turboStreamHeader()` sets `Content-Type: text/vnd.turbo-stream.html`, which Turbo 8 strictly requires for stream processing.
+- **Argument validation** via the new internal `$validateEnum` — typos in `variant` / `size` / `type` / `action` / `orientation` throw `WheelsBasecoat.InvalidArgument` naming the helper, the bad value, and the allowed list. Wired into `uiButton`, `uiBadge`, `uiAlert`, `uiField`, `uiToast`, `uiButtonGroup`, `uiThemeToggle`, and `turboStream`.
+- **Live `index.cfm` showcase** — the Wheels package debug panel page now renders every helper with its source. Doubles as a visual regression target.
+- **Comprehensive `BasecoatV2Spec.cfc`** — snapshot-style tests for every new helper plus the validation throw cases.
+- **Eight new icons** in the Lucide map: `sun`, `moon`, `log-out`, `log-in`, `user`, `settings` (plus the existing 16).
+
+### Changed (BREAKING)
+- `init()` now reads its `version` field from `package.json`, replacing the hard-coded `"3.0"` literal that drifted from the manifest. Callers reading `pluginObj.version` will see `2.0.0-rc.1` from this release on.
+- `basecoatIncludes()` argument list reorganized:
+  - Renamed `basecoatCSSPath` → `cssPath`.
+  - Added `jsPath`, `uiJsPath`, `basecoatJS` (default `true`), `uiJS` (default `true`).
+  - **`alpine` default flipped from `true` to `false`.** Alpine.js is no longer required by any built-in helper. Apps that depend on Alpine should pass `alpine=true` explicitly.
+  - Default `cssPath` changed to `/assets/basecoat/basecoat.min.css` (the new bundled-asset publish location).
+- `uiDialog` and `uiDialogEnd` no longer emit inline `onclick` attributes. Open/close is now delegated via `data-ui-dialog-open` / `data-ui-dialog-close` attributes handled by `wheels-basecoat-ui.js` (loaded by default by `basecoatIncludes()`). Apps with strict CSP can now use the dialog without an `unsafe-inline` allowance. **If you've disabled `uiJS`** in `basecoatIncludes()`, dialogs will no longer open without your own delegated handler.
+
+### Fixed
+- `init() this.version` no longer reports `"3.0"` while `package.json` says something else. The two are now the same string.
+
+## [1.1.0] — 2026-05-01
 
 ### Changed (BREAKING)
 - `uiCardHeader`, `uiCardContent`, `uiCardFooter` (and matching `*End`) now emit semantic `<header>` / `<section>` / `<footer>` elements instead of `<div class="card-header">` / `<div class="card-content">` / `<div class="card-footer">`. `uiCardHeader` also emits `<h2>` for the title (was `<h3>`). Reason: basecoat-css 0.3.x dropped the older class hooks and now styles cards exclusively via the semantic-element selectors `.card > header`, `.card > section`, `.card > footer`, with the title typography targeted at `.card > header h2`. Apps using the unmodified helpers under basecoat-css 0.3.x rendered cards with no internal padding, no header/title typography, and no flex footer — the visible bug surfaced as edge-to-edge text inside an outlined box. Helper API (function names, parameters) is unchanged. Apps that wrote custom CSS targeting `.card-header` / `.card-content` / `.card-footer` will need to re-target the semantic selectors. (Discovered during a Wheels Tutorial fresh-VM bake against basecoat-css 0.3.11.)

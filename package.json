@@ -1,9 +1,10 @@
 {
     "name": "wheels-basecoat",
-    "version": "1.0.5",
+    "version": "2.0.0-rc.1",
     "author": "Wheels Core Team",
-    "description": "Basecoat UI component helpers for Wheels. shadcn/ui-quality design using plain HTML + Tailwind CSS. No React required.",
+    "description": "Basecoat UI component helpers for Wheels. shadcn/ui-quality design with bundled CSS+JS, native Hotwire/Turbo integration, dark mode, and Wheels model-bound form fields.",
     "wheelsVersion": ">=4.0",
+    "basecoatCSSVersion": "0.3.11",
     "provides": {
         "mixins": "controller",
         "services": [],
