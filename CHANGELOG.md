@@ -2,6 +2,51 @@
 
 All notable changes to this package will be documented in this file.
 
+## [2.4.0-rc.1] — 2026-05-01
+
+### Added
+- **`uiBoundCheckbox(objectName, property, label, switch, description, ...)`** — single bound checkbox or switch. Solves the standard "unchecked checkbox submits nothing" footgun by emitting a hidden `value="0"` companion input under the same name BEFORE the checkbox, so `params.<obj>.<prop>` is always defined as `0` or `1`. Pass `switch=true` to render as a basecoat `.switch` instead.
+- **`uiCheckboxGroup(name, options, value, legend, description, inline)`** — multi-checkbox collection emitting `name="<name>[]"` so Wheels arrays the values. Same `options="value:Label[:disabled],..."` shape as `uiSelect` / `uiRadioGroup`. Tolerates a real CFML array, a JSON-array string, or a CSV string for `value`.
+- **`uiBoundCheckboxGroup(objectName, property, options, ...)`** — Wheels-bound variant. Auto-resolves the array/JSON/CSV value from `obj[property]`, humanizes the property into the legend.
+- **`uiRadioGroup(name, options, value, legend, description, inline)`** — radio-group container with `role="radiogroup"`. Same options syntax as the checkbox group.
+- **`uiBoundRadioGroup(objectName, property, options, ...)`** — Wheels-bound variant.
+- **`uiErrorSummary(model, title, description)`** — drop-in replacement for Wheels' `errorMessagesFor()`. Renders the model's full validation error list as a basecoat destructive alert with a bullet list of field-prefixed messages from `model.allErrors()`. Returns "" when no errors so it's safe to call unconditionally at the top of a form. Auto-pluralizes the title (`"1 error"` vs `"3 errors"`).
+- **`uiRating(value, max, name, ariaLabel, class)`** — 1-to-N star rating. Read-only display by default; pass `name=` to render as an interactive radio group (CSS-only highlight via the bundled extras stylesheet — no JS required). Renders highest-first internally so the CSS sibling combinator can light earlier stars on hover/check.
+- **One new icon**: `star`.
+- **`wheels-basecoat-extras.min.css` extended** with `.ui-rating` rules (display + interactive variants) plus a `.radio` rule (basecoat-css 0.3.x ships `.checkbox` and `.switch` but no radio styling — the new helpers add a sized circle that matches the checkbox treatment).
+
+### Form-binding round-trip is now complete
+With v2.4, every common form input type has a Wheels-bound helper that reads the current value, emits the canonical `<obj>[<prop>]` name, surfaces validation errors, and humanizes the label:
+
+| Input | Helper |
+|---|---|
+| Text / textarea / select / date / etc. | `uiBoundField` |
+| Rich combobox (search, multi-select) | `uiBoundSelect` |
+| Range slider | `uiBoundSlider` |
+| Single boolean | `uiBoundCheckbox` (with hidden companion for unchecked submissions) |
+| Multi-checkbox collection | `uiBoundCheckboxGroup` |
+| Single-choice radio | `uiBoundRadioGroup` |
+
+Plus `uiErrorSummary(model)` to render model-level validation results without manually iterating `errorMessagesFor()`.
+
+## [2.3.0-rc.1] — 2026-05-01
+
+### Added
+- **`uiSlider(name, value, min, max, step, label, showValue, disabled, id, class)`** — basecoat-styled `<input type="range">` wrapper. Computes the `--slider-value` CSS variable percentage server-side from the current value so the filled portion of the track renders correctly on first paint (no JS required for the initial render). Optional `showValue=true` renders an `<output data-ui-slider-output>` mirror that the bundled `wheels-basecoat-ui.js` keeps in sync as the user drags. Emits `aria-valuemin/max/now`. Pairs cleanly with `uiBoundSlider`.
+- **`uiBoundSlider(objectName, property, ...)`** — Wheels-bound variant that auto-resolves the value from `obj[property]`, emits `name="<objectName>[<property>]"`, and humanizes the property name into the default label. Mirrors `uiBoundField`'s ergonomics for slider use.
+- **`uiSelect`'s Wheels-bound sibling: `uiBoundSelect(objectName, property, options, ...)`** — same options syntax + tolerates a real array on the model for multi-select (auto-serializes to JSON for the hidden input). Throws `WheelsBasecoat.ObjectNotFound` if the named object isn't in scope.
+- **Steps / wizard progress indicator**: `uiSteps(ariaLabel, class)` opens a labeled `<nav><ol class="ui-steps">`; `uiStep(text, status="complete|current|upcoming", number, description, href)` renders each `<li data-status="...">`; `uiStepsEnd()` closes. Auto-numbers steps via a request-scoped counter when no `number` is passed. Complete steps render a check icon in the marker; current steps emit `aria-current="step"`. Optional `href` wraps complete/upcoming markers in a link (current never links). Visual defaults shipped in `wheels-basecoat-extras.min.css` — numbered circles connected by a colored progress line, mobile-stacked layout below 640px.
+- **`wheels-basecoat-extras.min.css` extended** with `.ui-steps` rules to match.
+- **`wheels-basecoat-ui.js` extended** to keep slider `--slider-value` in sync as the user drags + mirror the live value into any matching `<output data-ui-slider-output>`. CSP-safe; no inline event handlers needed.
+
+## [2.2.0-rc.1] — 2026-05-01
+
+### Added
+- **Bundled `wheels-basecoat-extras.min.css`** — visual defaults for the components that basecoat-css 0.3.x doesn't ship CSS for (`.breadcrumb`, `.pagination`). Loaded automatically by `basecoatIncludes()` (toggle via the new `extrasCSS` arg, default `true`). Closes the gap that previously left `uiBreadcrumb` and `uiPagination` rendering unstyled — their helpers were correct, the upstream stylesheet just had nothing for them.
+- **Command palette family** — `uiCommand` / `uiCommandInput` / `uiCommandList` / `uiCommandGroup` / `uiCommandItem` / `uiCommandSeparator` / `uiCommandEmpty` / `uiCommandEnd` plus the modal wrapper `uiCommandDialog` / `uiCommandDialogEnd`. Drives basecoat-js's `command.js` for the live search filter (matches by `data-filter` / textContent / `data-keywords`), arrow-key + Home/End + Enter navigation, and click-to-close behavior when nested inside a `<dialog class="command-dialog">`. Items support `keywords`, `icon`, `kbd`, `force`, `keepOpen`, `disabled`, and either `<a href>` or `<button>` rendering.
+- **`uiSelect`** — basecoat-css 0.3.x's rich combobox component (popover, optional search, multi-select). Distinct from `uiField(type="select")` which renders a plain native `<select>`. Single-call helper that takes the same `options="value:Label[:disabled],..."` shape as `uiField`, pre-renders the trigger label so there's no FOUC before `select.js` initializes, and emits the four parts the JS queries (trigger button, popover, listbox, hidden input). Multi-select serializes the value as a JSON array in the hidden input.
+- **`basecoatIncludes(extrasCSS=true)`** — the new opt-in that loads the extras CSS. New args: `extrasCssPath`, `extrasCSS`. The default extras-css path mirrors the recommended publish location.
+
 ## [2.1.0-rc.1] — 2026-05-01
 
 ### Changed (BREAKING)

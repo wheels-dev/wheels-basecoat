@@ -47,10 +47,12 @@ component output="false" {
 	 */
 	public string function basecoatIncludes(
 		string cssPath = "/assets/basecoat/basecoat.min.css",
+		string extrasCssPath = "/assets/basecoat/wheels-basecoat-extras.min.css",
 		string jsPath = "/assets/basecoat/js/all.min.js",
 		string uiJsPath = "/assets/basecoat/js/wheels-basecoat-ui.min.js",
 		boolean basecoatJS = true,
 		boolean uiJS = true,
+		boolean extrasCSS = true,
 		boolean alpine = false,
 		string alpineVersion = "3",
 		boolean turboAware = true
@@ -60,6 +62,7 @@ component output="false" {
 			writeOutput(
 				(arguments.turboAware ? '<meta name="turbo-cache-control" content="no-preview">' & chr(10) : '')
 				& '<link rel="stylesheet" href="#arguments.cssPath#">' & chr(10)
+				& (arguments.extrasCSS ? '<link rel="stylesheet" href="#arguments.extrasCssPath#">' & chr(10) : '')
 				& (arguments.basecoatJS ? '<script defer src="#arguments.jsPath#"></script>' & chr(10) : '')
 				& (arguments.uiJS ? '<script defer src="#arguments.uiJsPath#"></script>' & chr(10) : '')
 				& (arguments.alpine ? '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@#arguments.alpineVersion#/dist/cdn.min.js"></script>' & chr(10) : '')
@@ -379,7 +382,8 @@ component output="false" {
 			"settings": '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
 			"menu": '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
 			"home": '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-			"file-text": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/>'
+			"file-text": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/>',
+			"star": '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'
 		};
 
 		var paths = structKeyExists(icons, arguments.name) ? icons[arguments.name] : '<circle cx="12" cy="12" r="10"/>';
@@ -1543,4 +1547,869 @@ component output="false" {
 		return trim(local.html);
 	}
 
+	// ==============================================
+	// COMMAND PALETTE  (driven by basecoat-js's command.js)
+	// ==============================================
+	//
+	// basecoat-css 0.3.x ships `.command` and `.command-dialog` styles.
+	// command.js wires the search input to filter [role=menuitem] items
+	// (matching by `data-filter`/`textContent` plus optional `data-keywords`),
+	// arrow-key + Home/End + Enter navigation, and click-to-close behavior
+	// when nested in a `<dialog class="command-dialog">`.
+	//
+	//   <div class="command">
+	//     <header><input type="text" placeholder="Search..."></header>
+	//     <div role="menu">
+	//       <div role="group" aria-label="Suggestions">
+	//         <button role="menuitem" data-keywords="...">Item</button>
+	//       </div>
+	//       <hr role="separator">
+	//       <div role="group" aria-label="Actions">
+	//         <button role="menuitem" data-keep-command-open>Toggle theme</button>
+	//       </div>
+	//     </div>
+	//   </div>
+	//
+	// For a ⌘K-style modal palette, wrap the command in `uiCommandDialog`.
+
+	/** Opens a command palette container. Close with uiCommandEnd(). */
+	public string function uiCommand(string class = "") {
+		var cls = "command";
+		if (len(arguments.class)) cls &= " " & arguments.class;
+		return '<div class="#cls#">';
+	}
+
+	/**
+	 * Renders the search input row of a command palette.
+	 * basecoat-js attaches an `input` listener that filters items by their
+	 * `data-filter` / textContent / `data-keywords`.
+	 */
+	public string function uiCommandInput(
+		string placeholder = "Search...",
+		string ariaLabel = "Search commands",
+		string class = ""
+	) {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<header><input type="text" placeholder="#arguments.placeholder#" aria-label="#arguments.ariaLabel#"#classAttr#></header>';
+	}
+
+	/** Opens the menu list of a command palette. Close with uiCommandListEnd(). */
+	public string function uiCommandList(string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<div role="menu"#classAttr#>';
+	}
+
+	public string function uiCommandListEnd() {
+		return '</div>';
+	}
+
+	/** Opens a labeled group inside a command list. Close with uiCommandGroupEnd(). */
+	public string function uiCommandGroup(required string label, string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<div role="group" aria-label="#arguments.label#"#classAttr#>';
+	}
+
+	public string function uiCommandGroupEnd() {
+		return '</div>';
+	}
+
+	/**
+	 * Renders a command palette item. With `href`, renders a navigation link
+	 * (`<a>`); without, a `<button>` for JS-driven actions. Both carry
+	 * `role="menuitem"` so command.js's filter + keyboard nav include them.
+	 *
+	 * @keywords Space- or comma-separated extra search terms (basecoat-js
+	 *           includes substring matches against these).
+	 * @icon Lucide icon name to render before the label.
+	 * @kbd Optional keyboard shortcut hint, rendered to the right.
+	 * @force `true` keeps the item visible regardless of the input filter.
+	 *        Use sparingly — typically for "no results" placeholders.
+	 * @keepOpen When the command is inside a command-dialog, prevents the
+	 *           dialog from closing on item click.
+	 */
+	public string function uiCommandItem(
+		required string text,
+		string href = "",
+		string keywords = "",
+		string icon = "",
+		string kbd = "",
+		boolean force = false,
+		boolean keepOpen = false,
+		boolean disabled = false,
+		string class = ""
+	) {
+		var attrs = ' role="menuitem"';
+		if (len(arguments.keywords)) attrs &= ' data-keywords="#arguments.keywords#"';
+		if (arguments.force) attrs &= ' data-force';
+		if (arguments.keepOpen) attrs &= ' data-keep-command-open';
+		if (arguments.disabled) attrs &= ' aria-disabled="true"';
+		if (len(arguments.class)) attrs &= ' class="#arguments.class#"';
+
+		var inner = "";
+		if (len(arguments.icon)) inner &= $uiLucideIcon(arguments.icon, 16);
+		inner &= '<span>#arguments.text#</span>';
+		if (len(arguments.kbd)) inner &= '<kbd class="kbd">#arguments.kbd#</kbd>';
+
+		if (len(arguments.href)) {
+			return '<a href="#arguments.href#"#attrs#>#inner#</a>';
+		}
+		return '<button type="button"#attrs#>#inner#</button>';
+	}
+
+	public string function uiCommandSeparator() {
+		return '<hr role="separator">';
+	}
+
+	/** Renders a static "no results" placeholder. Pair with `force=true` for
+	    items you want visible regardless of the search query. */
+	public string function uiCommandEmpty(string text = "No results.", string class = "") {
+		var cls = "command-empty";
+		if (len(arguments.class)) cls &= " " & arguments.class;
+		return '<div class="#cls#" data-force>#arguments.text#</div>';
+	}
+
+	public string function uiCommandEnd() {
+		return '</div>';
+	}
+
+	/**
+	 * Wraps a command palette in a `<dialog class="command-dialog">` so it
+	 * presents as a ⌘K-style modal. Renders an optional trigger button.
+	 * Open via `data-ui-dialog-open="<id>"` (handled by wheels-basecoat-ui.js),
+	 * or programmatically via `document.getElementById(id).showModal()`.
+	 */
+	public string function uiCommandDialog(
+		string triggerText = "",
+		string triggerClass = "btn-outline",
+		string id = "",
+		string class = ""
+	) {
+		var local = {};
+		local.id = $uiBuildId(arguments.id, "cmddlg");
+		local.cls = "dialog command-dialog";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+
+		savecontent variable="local.html" {
+			writeOutput(
+				(len(arguments.triggerText) ? '<button type="button" data-ui-dialog-open="#local.id#" class="#arguments.triggerClass#">#arguments.triggerText#</button>' & chr(10) : '')
+				& '<dialog id="#local.id#" class="#local.cls#" aria-label="Command palette">'
+			);
+		}
+		return trim(local.html);
+	}
+
+	public string function uiCommandDialogEnd() {
+		return '</dialog>';
+	}
+
+	// ==============================================
+	// SELECT  (rich combobox driven by basecoat-js's select.js)
+	// ==============================================
+	//
+	// Different from `uiField(type="select")` which wraps the native
+	// <select> element. This is the basecoat-css 0.3.x .select component:
+	// a popover-driven combobox with optional search filtering, multi-select,
+	// keyboard navigation, and a hidden input for form submission.
+	//
+	//   <div class="select" data-placeholder="Pick one">
+	//     <button aria-expanded="false" aria-haspopup="listbox">
+	//       <span>Selected label</span>
+	//     </button>
+	//     <div data-popover aria-hidden="true">
+	//       <header><input type="text" placeholder="Search..."></header>
+	//       <div role="listbox">
+	//         <div role="option" data-value="a">Apple</div>
+	//         …
+	//       </div>
+	//     </div>
+	//     <input type="hidden" name="fruit" value="a">
+	//   </div>
+
+	/**
+	 * Renders a basecoat select / combobox in one call.
+	 *
+	 * @name Hidden input name for form submission. Required.
+	 * @options "value:Label[:disabled],value:Label" — same shape as `uiField(type=select)`.
+	 *          Append `:disabled` as a third segment to disable that option.
+	 * @value Initial selected value. For multiselect, pass a JSON-encoded
+	 *        array string ('["a","b"]') or a comma-separated list.
+	 * @placeholder Shown when nothing is selected.
+	 * @search Render the search input in the popover header.
+	 * @multiselect Allow multiple selections; hidden input emits a JSON array.
+	 * @closeOnSelect Close the popover after each selection (single-select default leaves it open
+	 *                only when multi; pass `true` to override).
+	 */
+	public string function uiSelect(
+		required string name,
+		required string options,
+		string value = "",
+		string placeholder = "Select an option",
+		boolean search = false,
+		boolean multiselect = false,
+		boolean closeOnSelect = false,
+		string id = "",
+		string class = ""
+	) {
+		var local = {};
+		local.id = $uiBuildId(arguments.id, "sel");
+		local.cls = "select";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+
+		// Parse the options string into an array of {value, label, disabled}.
+		local.parsed = [];
+		for (var opt in listToArray(arguments.options)) {
+			var parts = listToArray(opt, ":");
+			arrayAppend(local.parsed, {
+				value: parts[1],
+				label: arrayLen(parts) >= 2 ? parts[2] : parts[1],
+				disabled: arrayLen(parts) >= 3 && parts[3] == "disabled"
+			});
+		}
+
+		// Resolve initial selection. Multiselect can arrive as JSON or CSV.
+		local.selected = [];
+		if (arguments.multiselect && len(arguments.value)) {
+			try {
+				var asJson = deserializeJSON(arguments.value);
+				local.selected = isArray(asJson) ? asJson : [arguments.value];
+			} catch (any e) {
+				local.selected = listToArray(arguments.value);
+			}
+		} else if (len(arguments.value)) {
+			local.selected = [arguments.value];
+		}
+
+		// Pre-render the trigger label so there's no FOUC before select.js inits.
+		local.triggerLabel = arguments.placeholder;
+		local.triggerClass = "text-muted-foreground";
+		if (arrayLen(local.selected)) {
+			local.matched = [];
+			for (var item in local.parsed) {
+				if (arrayFind(local.selected, item.value)) arrayAppend(local.matched, item.label);
+			}
+			if (arrayLen(local.matched)) {
+				local.triggerLabel = arrayToList(local.matched, ", ");
+				local.triggerClass = "";
+			}
+		}
+
+		// Hidden input value: JSON array for multi, plain string for single.
+		local.hiddenValue = arguments.multiselect
+			? serializeJSON(local.selected)
+			: (arrayLen(local.selected) ? local.selected[1] : "");
+
+		savecontent variable="local.html" {
+			var dataAttrs = ' data-placeholder="#arguments.placeholder#"';
+			if (arguments.closeOnSelect) dataAttrs &= ' data-close-on-select="true"';
+			writeOutput('<div class="#local.cls#" id="#local.id#"#dataAttrs#>' & chr(10));
+
+			writeOutput('<button type="button" aria-expanded="false" aria-haspopup="listbox" aria-controls="#local.id#-listbox">' & chr(10));
+			var spanCls = len(local.triggerClass) ? ' class="#local.triggerClass#"' : "";
+			writeOutput('<span#spanCls#>#local.triggerLabel#</span>' & chr(10));
+			writeOutput('</button>' & chr(10));
+
+			writeOutput('<div data-popover aria-hidden="true">' & chr(10));
+			if (arguments.search) {
+				writeOutput('<header><input type="text" placeholder="Search..." aria-label="Search options"></header>' & chr(10));
+			}
+			writeOutput('<div role="listbox" id="#local.id#-listbox"');
+			if (arguments.multiselect) writeOutput(' aria-multiselectable="true"');
+			writeOutput('>' & chr(10));
+			var idx = 0;
+			for (var item in local.parsed) {
+				idx++;
+				var optId = "#local.id#-opt-#idx#";
+				var isSel = arrayFind(local.selected, item.value) > 0;
+				writeOutput('<div role="option" id="#optId#" data-value="#item.value#"');
+				if (isSel) writeOutput(' aria-selected="true"');
+				if (item.disabled) writeOutput(' aria-disabled="true"');
+				writeOutput('>#item.label#</div>' & chr(10));
+			}
+			writeOutput('</div>' & chr(10));
+			writeOutput('</div>' & chr(10));
+
+			writeOutput('<input type="hidden" name="#arguments.name#" value="#htmlEditFormat(local.hiddenValue)#">' & chr(10));
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	/**
+	 * Wheels-bound variant of `uiSelect`. Auto-resolves the model value
+	 * (single-string for single-select; JSON-array string for multiselect)
+	 * and emits a `name="<objectName>[<property>]"` hidden input — same
+	 * shape as `uiBoundField` does for ad-hoc inputs.
+	 *
+	 * <pre>
+	 *   ##uiBoundSelect(objectName="post", property="status",
+	 *                   options="draft:Draft,published:Published,archived:Archived")##
+	 * </pre>
+	 */
+	public string function uiBoundSelect(
+		required string objectName,
+		required string property,
+		required string options,
+		string placeholder = "Select an option",
+		boolean search = false,
+		boolean multiselect = false,
+		boolean closeOnSelect = false,
+		string id = "",
+		string class = ""
+	) {
+		if (!structKeyExists(variables, arguments.objectName)) {
+			throw(
+				type = "WheelsBasecoat.ObjectNotFound",
+				message = "uiBoundSelect: object '#arguments.objectName#' not found in the current scope."
+			);
+		}
+		var obj = variables[arguments.objectName];
+
+		// Resolve value. Multiselect tolerates either a JSON-array string,
+		// a CSV string, or a real array on the model.
+		var resolvedValue = "";
+		try {
+			var raw = obj[arguments.property] ?: "";
+			if (arguments.multiselect && IsArray(raw)) {
+				resolvedValue = serializeJSON(raw);
+			} else {
+				resolvedValue = raw;
+			}
+		} catch (any e) {
+			resolvedValue = "";
+		}
+
+		return uiSelect(
+			name = "#arguments.objectName#[#arguments.property#]",
+			options = arguments.options,
+			value = resolvedValue,
+			placeholder = arguments.placeholder,
+			search = arguments.search,
+			multiselect = arguments.multiselect,
+			closeOnSelect = arguments.closeOnSelect,
+			id = arguments.id,
+			class = arguments.class
+		);
+	}
+
+	// ==============================================
+	// SLIDER  (styled <input type="range"> with --slider-value fill)
+	// ==============================================
+	//
+	// basecoat-css 0.3.x styles `input[type=range]` with a CSS variable
+	// `--slider-value` that drives the filled portion of the track. We
+	// compute the current percentage server-side and emit `style` + the
+	// `aria-valuetext`, so the slider renders with the right fill on
+	// first paint (no JS needed).
+
+	/**
+	 * Renders a basecoat-styled range slider.
+	 *
+	 * @name Form input name. Required.
+	 * @value Current value. Defaults to halfway between min and max.
+	 * @min Minimum value. Default 0.
+	 * @max Maximum value. Default 100.
+	 * @step Step increment. Default 1.
+	 * @label Optional label text rendered above the slider.
+	 * @showValue Render the current value to the right of the slider.
+	 * @id Optional input id. Auto-generated if omitted.
+	 */
+	public string function uiSlider(
+		required string name,
+		any value = "",
+		numeric min = 0,
+		numeric max = 100,
+		numeric step = 1,
+		string label = "",
+		boolean showValue = false,
+		boolean disabled = false,
+		string id = "",
+		string class = ""
+	) {
+		var local = {};
+		local.id = $uiBuildId(arguments.id, "slider");
+		local.val = len(arguments.value) ? arguments.value : (arguments.min + arguments.max) / 2;
+		// Clamp + percentage for the fill var.
+		local.range = arguments.max - arguments.min;
+		local.pct = local.range == 0 ? 0 : ((local.val - arguments.min) / local.range) * 100;
+		if (local.pct < 0) local.pct = 0;
+		if (local.pct > 100) local.pct = 100;
+		local.attrs = 'id="#local.id#" name="#arguments.name#" type="range"'
+			& ' min="#arguments.min#" max="#arguments.max#" step="#arguments.step#"'
+			& ' value="#local.val#"'
+			& ' style="--slider-value: #numberFormat(local.pct, '0.##')#%"'
+			& ' aria-valuemin="#arguments.min#" aria-valuemax="#arguments.max#" aria-valuenow="#local.val#"';
+		if (arguments.disabled) local.attrs &= " disabled";
+		if (len(arguments.class)) local.attrs &= ' class="#arguments.class#"';
+
+		savecontent variable="local.html" {
+			writeOutput('<div class="grid gap-2">' & chr(10));
+			if (len(arguments.label)) {
+				writeOutput('<label for="#local.id#">#arguments.label#</label>' & chr(10));
+			}
+			if (arguments.showValue) {
+				writeOutput('<div class="flex items-center gap-3">' & chr(10));
+				writeOutput('<input #local.attrs# class="flex-1">' & chr(10));
+				writeOutput('<output for="#local.id#" data-ui-slider-output class="text-sm tabular-nums w-12 text-right">#local.val#</output>' & chr(10));
+				writeOutput('</div>');
+			} else {
+				writeOutput('<input #local.attrs#>');
+			}
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	/**
+	 * Wheels-bound variant of `uiSlider`. Auto-resolves the value from
+	 * the model and emits `name="<objectName>[<property>]"`. Label
+	 * defaults to the humanized property name (matching `uiBoundField`).
+	 */
+	public string function uiBoundSlider(
+		required string objectName,
+		required string property,
+		numeric min = 0,
+		numeric max = 100,
+		numeric step = 1,
+		string label = "",
+		boolean showValue = false,
+		boolean disabled = false,
+		string id = "",
+		string class = ""
+	) {
+		if (!structKeyExists(variables, arguments.objectName)) {
+			throw(
+				type = "WheelsBasecoat.ObjectNotFound",
+				message = "uiBoundSlider: object '#arguments.objectName#' not found in the current scope."
+			);
+		}
+		var obj = variables[arguments.objectName];
+		var val = "";
+		try { val = obj[arguments.property] ?: ""; } catch (any e) { val = ""; }
+		return uiSlider(
+			name = "#arguments.objectName#[#arguments.property#]",
+			value = val,
+			min = arguments.min,
+			max = arguments.max,
+			step = arguments.step,
+			label = len(arguments.label) ? arguments.label : $humanize(arguments.property),
+			showValue = arguments.showValue,
+			disabled = arguments.disabled,
+			id = arguments.id,
+			class = arguments.class
+		);
+	}
+
+	// ==============================================
+	// STEPS  (multi-step / wizard progress indicator)
+	// ==============================================
+	//
+	// basecoat-css 0.3.x doesn't ship a stepper component. The output
+	// uses semantic `<ol>` + `aria-current="step"` + status data
+	// attributes that the bundled wheels-basecoat-extras.min.css styles
+	// (numbered circles, a connecting line, color-coding by status).
+	//
+	//   <ol class="ui-steps">
+	//     <li data-status="complete"><span class="ui-step-marker">1</span><span class="ui-step-label">Account</span></li>
+	//     <li data-status="current" aria-current="step"><span class="ui-step-marker">2</span>…</li>
+	//     <li data-status="upcoming"><span class="ui-step-marker">3</span>…</li>
+	//   </ol>
+
+	/** Opens a steps progress indicator. Close with uiStepsEnd(). */
+	public string function uiSteps(string ariaLabel = "Progress", string class = "") {
+		var cls = "ui-steps";
+		if (len(arguments.class)) cls &= " " & arguments.class;
+		return '<nav aria-label="#arguments.ariaLabel#"><ol class="#cls#">';
+	}
+
+	/**
+	 * Renders a single step. Status drives styling and ARIA:
+	 *   - "complete": done, with a check icon
+	 *   - "current":  active step, sets aria-current="step"
+	 *   - "upcoming": future step
+	 *
+	 * Pass `number` for the marker (defaults to incrementing counter
+	 * tracked in request scope between uiSteps / uiStepsEnd).
+	 */
+	public string function uiStep(
+		required string text,
+		string status = "upcoming",
+		string number = "",
+		string description = "",
+		string href = ""
+	) {
+		$validateEnum(arguments.status, "complete,current,upcoming", "uiStep", "status");
+		// Auto-increment number when caller doesn't pass one.
+		if (!structKeyExists(request, "$basecoatStepCounter")) request.$basecoatStepCounter = 0;
+		request.$basecoatStepCounter++;
+		var n = len(arguments.number) ? arguments.number : request.$basecoatStepCounter;
+
+		var marker = "";
+		if (arguments.status == "complete") {
+			marker = $uiLucideIcon("check", 14);
+		} else {
+			marker = n;
+		}
+
+		var aria = arguments.status == "current" ? ' aria-current="step"' : "";
+		var labelHtml = '<span class="ui-step-label">#arguments.text#</span>';
+		if (len(arguments.description)) {
+			labelHtml &= '<span class="ui-step-description">#arguments.description#</span>';
+		}
+		var inner = '<span class="ui-step-marker">#marker#</span><span class="ui-step-text">#labelHtml#</span>';
+		if (len(arguments.href) && arguments.status != "current") {
+			inner = '<a href="#arguments.href#" class="ui-step-link">' & inner & '</a>';
+		}
+		return '<li data-status="#arguments.status#"#aria#>#inner#</li>';
+	}
+
+	public string function uiStepsEnd() {
+		StructDelete(request, "$basecoatStepCounter");
+		return '</ol></nav>';
+	}
+
+	// ==============================================
+	// BOUND CHECKBOX (single boolean)
+	// ==============================================
+
+	/**
+	 * Wheels-bound single checkbox or switch.
+	 *
+	 * Solves the standard "unchecked checkbox submits nothing" footgun by
+	 * emitting a hidden input with the same name + falsy value BEFORE the
+	 * checkbox. The browser submits both; the controller receives the
+	 * later (checkbox) value when checked, the falsy hidden value when
+	 * not. So `params.<obj>.<prop>` is always defined as `0` or `1`.
+	 */
+	public string function uiBoundCheckbox(
+		required string objectName,
+		required string property,
+		string label = "",
+		boolean switch = false,
+		string description = "",
+		boolean disabled = false,
+		string id = "",
+		string class = ""
+	) {
+		if (!structKeyExists(variables, arguments.objectName)) {
+			throw(
+				type = "WheelsBasecoat.ObjectNotFound",
+				message = "uiBoundCheckbox: object '#arguments.objectName#' not found in the current scope."
+			);
+		}
+		var obj = variables[arguments.objectName];
+		var raw = "";
+		try { raw = obj[arguments.property] ?: ""; } catch (any e) { raw = ""; }
+		var checked = (IsBoolean(raw) && raw) || (IsNumeric(raw) && raw != 0);
+
+		var name = "#arguments.objectName#[#arguments.property#]";
+		var resolvedLabel = len(arguments.label) ? arguments.label : $humanize(arguments.property);
+		var inputId = $uiBuildId(arguments.id, "fld");
+		var inputCls = arguments.switch ? "switch" : "checkbox";
+		if (len(arguments.class)) inputCls &= " " & arguments.class;
+		var roleAttr = arguments.switch ? ' role="switch"' : "";
+		var disAttr = arguments.disabled ? " disabled" : "";
+
+		var local = {};
+		savecontent variable="local.html" {
+			writeOutput('<div class="grid gap-2">' & chr(10));
+			writeOutput('<div class="flex items-center gap-2">' & chr(10));
+			writeOutput('<input type="hidden" name="#name#" value="0">' & chr(10));
+			writeOutput(
+				'<input type="checkbox" id="#inputId#" name="#name#" value="1"'
+				& ' class="#inputCls#"#roleAttr##disAttr#'
+				& (checked ? " checked" : "")
+				& ' />' & chr(10)
+			);
+			writeOutput('<label for="#inputId#">#resolvedLabel#</label>' & chr(10));
+			writeOutput('</div>' & chr(10));
+			if (len(arguments.description)) {
+				writeOutput('<p class="text-sm text-muted-foreground">#arguments.description#</p>' & chr(10));
+			}
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	// ==============================================
+	// CHECKBOX GROUP (multi-value) + bound variant
+	// ==============================================
+
+	/**
+	 * Group of checkboxes posting an array under the same name (`name[]`).
+	 *
+	 * @options Same shape as uiSelect: "value:Label[:disabled],..."
+	 * @value Initial selected values — comma-separated string, JSON array, or real CFML array.
+	 */
+	public string function uiCheckboxGroup(
+		required string name,
+		required string options,
+		any value = "",
+		string legend = "",
+		string description = "",
+		boolean inline = false,
+		string class = ""
+	) {
+		var local = {};
+		local.selected = [];
+		if (IsArray(arguments.value)) {
+			local.selected = arguments.value;
+		} else if (Len(arguments.value)) {
+			try {
+				var asJson = deserializeJSON(arguments.value);
+				local.selected = isArray(asJson) ? asJson : [arguments.value];
+			} catch (any e) {
+				local.selected = listToArray(arguments.value);
+			}
+		}
+
+		local.parsed = [];
+		for (var opt in listToArray(arguments.options)) {
+			var parts = listToArray(opt, ":");
+			arrayAppend(local.parsed, {
+				value: parts[1],
+				label: arrayLen(parts) >= 2 ? parts[2] : parts[1],
+				disabled: arrayLen(parts) >= 3 && parts[3] == "disabled"
+			});
+		}
+
+		local.itemsCls = arguments.inline ? "flex flex-wrap gap-x-4 gap-y-2" : "grid gap-2";
+		local.fieldsetCls = "fieldset";
+		if (len(arguments.class)) local.fieldsetCls &= " " & arguments.class;
+
+		savecontent variable="local.html" {
+			writeOutput('<fieldset class="#local.fieldsetCls#">' & chr(10));
+			if (len(arguments.legend)) writeOutput('<legend>#arguments.legend#</legend>' & chr(10));
+			if (len(arguments.description)) writeOutput('<p>#arguments.description#</p>' & chr(10));
+			writeOutput('<div class="#local.itemsCls#">' & chr(10));
+			var idx = 0;
+			for (var item in local.parsed) {
+				idx++;
+				var cbId = "cbg-" & replace(left(createUUID(), 8), "-", "", "all") & "-" & idx;
+				var checked = arrayFind(local.selected, item.value) > 0;
+				writeOutput('<div class="flex items-center gap-2">' & chr(10));
+				writeOutput('<input type="checkbox" id="#cbId#" name="#arguments.name#[]" value="#item.value#" class="checkbox"');
+				if (checked) writeOutput(" checked");
+				if (item.disabled) writeOutput(" disabled");
+				writeOutput(' />' & chr(10));
+				writeOutput('<label for="#cbId#">#item.label#</label>' & chr(10));
+				writeOutput('</div>' & chr(10));
+			}
+			writeOutput('</div>' & chr(10));
+			writeOutput('</fieldset>');
+		}
+		return trim(local.html);
+	}
+
+	/** Wheels-bound multi-checkbox group. */
+	public string function uiBoundCheckboxGroup(
+		required string objectName,
+		required string property,
+		required string options,
+		string legend = "",
+		string description = "",
+		boolean inline = false,
+		string class = ""
+	) {
+		if (!structKeyExists(variables, arguments.objectName)) {
+			throw(
+				type = "WheelsBasecoat.ObjectNotFound",
+				message = "uiBoundCheckboxGroup: object '#arguments.objectName#' not found in the current scope."
+			);
+		}
+		var obj = variables[arguments.objectName];
+		var raw = "";
+		try { raw = obj[arguments.property] ?: ""; } catch (any e) { raw = ""; }
+		return uiCheckboxGroup(
+			name = "#arguments.objectName#[#arguments.property#]",
+			options = arguments.options,
+			value = raw,
+			legend = len(arguments.legend) ? arguments.legend : $humanize(arguments.property),
+			description = arguments.description,
+			inline = arguments.inline,
+			class = arguments.class
+		);
+	}
+
+	// ==============================================
+	// RADIO GROUP + bound variant
+	// ==============================================
+
+	public string function uiRadioGroup(
+		required string name,
+		required string options,
+		string value = "",
+		string legend = "",
+		string description = "",
+		boolean inline = false,
+		string class = ""
+	) {
+		var local = {};
+		local.parsed = [];
+		for (var opt in listToArray(arguments.options)) {
+			var parts = listToArray(opt, ":");
+			arrayAppend(local.parsed, {
+				value: parts[1],
+				label: arrayLen(parts) >= 2 ? parts[2] : parts[1],
+				disabled: arrayLen(parts) >= 3 && parts[3] == "disabled"
+			});
+		}
+		local.itemsCls = arguments.inline ? "flex flex-wrap gap-x-4 gap-y-2" : "grid gap-2";
+		local.fieldsetCls = "fieldset";
+		if (len(arguments.class)) local.fieldsetCls &= " " & arguments.class;
+
+		savecontent variable="local.html" {
+			writeOutput('<fieldset class="#local.fieldsetCls#">' & chr(10));
+			if (len(arguments.legend)) writeOutput('<legend>#arguments.legend#</legend>' & chr(10));
+			if (len(arguments.description)) writeOutput('<p>#arguments.description#</p>' & chr(10));
+			writeOutput('<div class="#local.itemsCls#" role="radiogroup">' & chr(10));
+			var idx = 0;
+			for (var item in local.parsed) {
+				idx++;
+				var rId = "rg-" & replace(left(createUUID(), 8), "-", "", "all") & "-" & idx;
+				var checked = arguments.value == item.value;
+				writeOutput('<div class="flex items-center gap-2">' & chr(10));
+				writeOutput('<input type="radio" id="#rId#" name="#arguments.name#" value="#item.value#" class="radio"');
+				if (checked) writeOutput(" checked");
+				if (item.disabled) writeOutput(" disabled");
+				writeOutput(' />' & chr(10));
+				writeOutput('<label for="#rId#">#item.label#</label>' & chr(10));
+				writeOutput('</div>' & chr(10));
+			}
+			writeOutput('</div>' & chr(10));
+			writeOutput('</fieldset>');
+		}
+		return trim(local.html);
+	}
+
+	/** Wheels-bound radio group. */
+	public string function uiBoundRadioGroup(
+		required string objectName,
+		required string property,
+		required string options,
+		string legend = "",
+		string description = "",
+		boolean inline = false,
+		string class = ""
+	) {
+		if (!structKeyExists(variables, arguments.objectName)) {
+			throw(
+				type = "WheelsBasecoat.ObjectNotFound",
+				message = "uiBoundRadioGroup: object '#arguments.objectName#' not found in the current scope."
+			);
+		}
+		var obj = variables[arguments.objectName];
+		var raw = "";
+		try { raw = obj[arguments.property] ?: ""; } catch (any e) { raw = ""; }
+		return uiRadioGroup(
+			name = "#arguments.objectName#[#arguments.property#]",
+			options = arguments.options,
+			value = toString(raw),
+			legend = len(arguments.legend) ? arguments.legend : $humanize(arguments.property),
+			description = arguments.description,
+			inline = arguments.inline,
+			class = arguments.class
+		);
+	}
+
+	// ==============================================
+	// ERROR SUMMARY
+	// ==============================================
+
+	/**
+	 * Drop-in replacement for Wheels' `errorMessagesFor()`. Renders a
+	 * basecoat destructive alert with a bullet list of field-prefixed
+	 * messages from `model.allErrors()`. Returns "" when no errors so
+	 * it's safe to call unconditionally at the top of a form.
+	 */
+	public string function uiErrorSummary(
+		required any model,
+		string title = "",
+		string description = ""
+	) {
+		var local = {};
+		try {
+			if (!arguments.model.hasErrors()) return "";
+			local.errors = arguments.model.allErrors();
+		} catch (any e) {
+			return "";
+		}
+		if (!arrayLen(local.errors)) return "";
+
+		local.t = len(arguments.title)
+			? arguments.title
+			: (arrayLen(local.errors) == 1
+				? "Couldn't save — 1 error"
+				: "Couldn't save — #arrayLen(local.errors)# errors");
+
+		savecontent variable="local.html" {
+			writeOutput('<div class="alert alert-destructive" role="alert">' & chr(10));
+			writeOutput($uiLucideIcon("alert-triangle", 16) & chr(10));
+			writeOutput('<h5>#local.t#</h5>' & chr(10));
+			writeOutput('<section>' & chr(10));
+			if (len(arguments.description)) writeOutput('<p>#arguments.description#</p>' & chr(10));
+			writeOutput('<ul>' & chr(10));
+			for (var err in local.errors) {
+				var prop = (err.property ?: "");
+				var msg = (err.message ?: "");
+				var line = len(prop) ? '<strong>#$humanize(prop)#</strong> #msg#' : msg;
+				writeOutput('<li>#line#</li>' & chr(10));
+			}
+			writeOutput('</ul>' & chr(10));
+			writeOutput('</section>' & chr(10));
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	// ==============================================
+	// RATING (1-N stars; read-only or interactive)
+	// ==============================================
+
+	/**
+	 * Renders a 1-to-N star rating. With `name` set, renders interactive
+	 * radio inputs whose labels show the stars (CSS-only highlight via
+	 * the bundled extras stylesheet — no JS required). Without `name`,
+	 * renders a static read-only display.
+	 */
+	public string function uiRating(
+		any value = 0,
+		numeric max = 5,
+		string name = "",
+		string ariaLabel = "Rating",
+		string class = ""
+	) {
+		var local = {};
+		local.cls = "ui-rating";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+		local.numeric = IsNumeric(arguments.value) ? val(arguments.value) : 0;
+		local.interactive = len(arguments.name);
+
+		savecontent variable="local.html" {
+			if (local.interactive) {
+				writeOutput('<fieldset class="#local.cls#" data-rating-max="#arguments.max#" role="radiogroup" aria-label="#arguments.ariaLabel#">' & chr(10));
+				// Render highest-first so CSS sibling combinators can light up
+				// earlier stars on hover/check.
+				for (var i = arguments.max; i >= 1; i--) {
+					var rId = "rt-" & replace(left(createUUID(), 8), "-", "", "all") & "-" & i;
+					var checked = local.numeric == i;
+					writeOutput('<input type="radio" id="#rId#" name="#arguments.name#" value="#i#"');
+					if (checked) writeOutput(" checked");
+					writeOutput(' />' & chr(10));
+					writeOutput('<label for="#rId#" aria-label="#i# of #arguments.max#">' & $uiLucideIcon("star", 20) & '</label>' & chr(10));
+				}
+				writeOutput('</fieldset>');
+			} else {
+				writeOutput('<span class="#local.cls#" data-rating="#local.numeric#" data-rating-max="#arguments.max#" aria-label="#arguments.ariaLabel#: #local.numeric# of #arguments.max#" role="img">' & chr(10));
+				for (var i = 1; i <= arguments.max; i++) {
+					var filled = i <= local.numeric;
+					writeOutput('<span class="ui-rating-star#filled ? ' is-filled' : ''#" aria-hidden="true">' & $uiLucideIcon("star", 16) & '</span>' & chr(10));
+				}
+				writeOutput('</span>');
+			}
+		}
+		return trim(local.html);
+	}
+
 }
+
+
