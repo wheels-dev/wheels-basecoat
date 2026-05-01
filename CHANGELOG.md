@@ -2,6 +2,11 @@
 
 All notable changes to this package will be documented in this file.
 
+## [1.0.5] — 2026-04-30
+
+### Changed
+- `uiButton` now always emits the variant suffix in its CSS class, including the default `primary` variant. A bare `uiButton(text="Save")` previously rendered `<button class="btn">`; it now renders `<button class="btn-primary">`. Sized primary buttons follow the same rule (`size="sm"` → `class="btn-sm-primary"` instead of `class="btn-sm"`). Rationale: the rendered HTML now self-documents the variant — inspecting `class="btn"` in DevTools could previously mean either "explicit primary" or "the author forgot to set the variant," and the two were indistinguishable. basecoat-css ships matching selectors for every size×variant combination (`.btn-primary`, `.btn-sm-primary`, `.btn-lg-primary`, `.btn-icon-primary`, etc.), so visual rendering is unchanged. Discovered during a Wheels Tutorial fresh-VM bake — the chapter-8 checkpoint asserted `class="btn btn-primary"` against rendered output, and the silent-skip behavior made the assertion impossible to satisfy. Wheels Tutorial Finding #5.
+
 ## [1.0.4] — 2026-04-30
 
 ### Fixed
