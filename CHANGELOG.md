@@ -2,6 +2,14 @@
 
 All notable changes to this package will be documented in this file.
 
+## [2.2.0-rc.1] — 2026-05-01
+
+### Added
+- **Bundled `wheels-basecoat-extras.min.css`** — visual defaults for the components that basecoat-css 0.3.x doesn't ship CSS for (`.breadcrumb`, `.pagination`). Loaded automatically by `basecoatIncludes()` (toggle via the new `extrasCSS` arg, default `true`). Closes the gap that previously left `uiBreadcrumb` and `uiPagination` rendering unstyled — their helpers were correct, the upstream stylesheet just had nothing for them.
+- **Command palette family** — `uiCommand` / `uiCommandInput` / `uiCommandList` / `uiCommandGroup` / `uiCommandItem` / `uiCommandSeparator` / `uiCommandEmpty` / `uiCommandEnd` plus the modal wrapper `uiCommandDialog` / `uiCommandDialogEnd`. Drives basecoat-js's `command.js` for the live search filter (matches by `data-filter` / textContent / `data-keywords`), arrow-key + Home/End + Enter navigation, and click-to-close behavior when nested inside a `<dialog class="command-dialog">`. Items support `keywords`, `icon`, `kbd`, `force`, `keepOpen`, `disabled`, and either `<a href>` or `<button>` rendering.
+- **`uiSelect`** — basecoat-css 0.3.x's rich combobox component (popover, optional search, multi-select). Distinct from `uiField(type="select")` which renders a plain native `<select>`. Single-call helper that takes the same `options="value:Label[:disabled],..."` shape as `uiField`, pre-renders the trigger label so there's no FOUC before `select.js` initializes, and emits the four parts the JS queries (trigger button, popover, listbox, hidden input). Multi-select serializes the value as a JSON array in the hidden input.
+- **`basecoatIncludes(extrasCSS=true)`** — the new opt-in that loads the extras CSS. New args: `extrasCssPath`, `extrasCSS`. The default extras-css path mirrors the recommended publish location.
+
 ## [2.1.0-rc.1] — 2026-05-01
 
 ### Changed (BREAKING)

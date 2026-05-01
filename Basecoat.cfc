@@ -47,10 +47,12 @@ component output="false" {
 	 */
 	public string function basecoatIncludes(
 		string cssPath = "/assets/basecoat/basecoat.min.css",
+		string extrasCssPath = "/assets/basecoat/wheels-basecoat-extras.min.css",
 		string jsPath = "/assets/basecoat/js/all.min.js",
 		string uiJsPath = "/assets/basecoat/js/wheels-basecoat-ui.min.js",
 		boolean basecoatJS = true,
 		boolean uiJS = true,
+		boolean extrasCSS = true,
 		boolean alpine = false,
 		string alpineVersion = "3",
 		boolean turboAware = true
@@ -60,6 +62,7 @@ component output="false" {
 			writeOutput(
 				(arguments.turboAware ? '<meta name="turbo-cache-control" content="no-preview">' & chr(10) : '')
 				& '<link rel="stylesheet" href="#arguments.cssPath#">' & chr(10)
+				& (arguments.extrasCSS ? '<link rel="stylesheet" href="#arguments.extrasCssPath#">' & chr(10) : '')
 				& (arguments.basecoatJS ? '<script defer src="#arguments.jsPath#"></script>' & chr(10) : '')
 				& (arguments.uiJS ? '<script defer src="#arguments.uiJsPath#"></script>' & chr(10) : '')
 				& (arguments.alpine ? '<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@#arguments.alpineVersion#/dist/cdn.min.js"></script>' & chr(10) : '')
@@ -1543,4 +1546,293 @@ component output="false" {
 		return trim(local.html);
 	}
 
+	// ==============================================
+	// COMMAND PALETTE  (driven by basecoat-js's command.js)
+	// ==============================================
+	//
+	// basecoat-css 0.3.x ships `.command` and `.command-dialog` styles.
+	// command.js wires the search input to filter [role=menuitem] items
+	// (matching by `data-filter`/`textContent` plus optional `data-keywords`),
+	// arrow-key + Home/End + Enter navigation, and click-to-close behavior
+	// when nested in a `<dialog class="command-dialog">`.
+	//
+	//   <div class="command">
+	//     <header><input type="text" placeholder="Search..."></header>
+	//     <div role="menu">
+	//       <div role="group" aria-label="Suggestions">
+	//         <button role="menuitem" data-keywords="...">Item</button>
+	//       </div>
+	//       <hr role="separator">
+	//       <div role="group" aria-label="Actions">
+	//         <button role="menuitem" data-keep-command-open>Toggle theme</button>
+	//       </div>
+	//     </div>
+	//   </div>
+	//
+	// For a ⌘K-style modal palette, wrap the command in `uiCommandDialog`.
+
+	/** Opens a command palette container. Close with uiCommandEnd(). */
+	public string function uiCommand(string class = "") {
+		var cls = "command";
+		if (len(arguments.class)) cls &= " " & arguments.class;
+		return '<div class="#cls#">';
+	}
+
+	/**
+	 * Renders the search input row of a command palette.
+	 * basecoat-js attaches an `input` listener that filters items by their
+	 * `data-filter` / textContent / `data-keywords`.
+	 */
+	public string function uiCommandInput(
+		string placeholder = "Search...",
+		string ariaLabel = "Search commands",
+		string class = ""
+	) {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<header><input type="text" placeholder="#arguments.placeholder#" aria-label="#arguments.ariaLabel#"#classAttr#></header>';
+	}
+
+	/** Opens the menu list of a command palette. Close with uiCommandListEnd(). */
+	public string function uiCommandList(string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<div role="menu"#classAttr#>';
+	}
+
+	public string function uiCommandListEnd() {
+		return '</div>';
+	}
+
+	/** Opens a labeled group inside a command list. Close with uiCommandGroupEnd(). */
+	public string function uiCommandGroup(required string label, string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		return '<div role="group" aria-label="#arguments.label#"#classAttr#>';
+	}
+
+	public string function uiCommandGroupEnd() {
+		return '</div>';
+	}
+
+	/**
+	 * Renders a command palette item. With `href`, renders a navigation link
+	 * (`<a>`); without, a `<button>` for JS-driven actions. Both carry
+	 * `role="menuitem"` so command.js's filter + keyboard nav include them.
+	 *
+	 * @keywords Space- or comma-separated extra search terms (basecoat-js
+	 *           includes substring matches against these).
+	 * @icon Lucide icon name to render before the label.
+	 * @kbd Optional keyboard shortcut hint, rendered to the right.
+	 * @force `true` keeps the item visible regardless of the input filter.
+	 *        Use sparingly — typically for "no results" placeholders.
+	 * @keepOpen When the command is inside a command-dialog, prevents the
+	 *           dialog from closing on item click.
+	 */
+	public string function uiCommandItem(
+		required string text,
+		string href = "",
+		string keywords = "",
+		string icon = "",
+		string kbd = "",
+		boolean force = false,
+		boolean keepOpen = false,
+		boolean disabled = false,
+		string class = ""
+	) {
+		var attrs = ' role="menuitem"';
+		if (len(arguments.keywords)) attrs &= ' data-keywords="#arguments.keywords#"';
+		if (arguments.force) attrs &= ' data-force';
+		if (arguments.keepOpen) attrs &= ' data-keep-command-open';
+		if (arguments.disabled) attrs &= ' aria-disabled="true"';
+		if (len(arguments.class)) attrs &= ' class="#arguments.class#"';
+
+		var inner = "";
+		if (len(arguments.icon)) inner &= $uiLucideIcon(arguments.icon, 16);
+		inner &= '<span>#arguments.text#</span>';
+		if (len(arguments.kbd)) inner &= '<kbd class="kbd">#arguments.kbd#</kbd>';
+
+		if (len(arguments.href)) {
+			return '<a href="#arguments.href#"#attrs#>#inner#</a>';
+		}
+		return '<button type="button"#attrs#>#inner#</button>';
+	}
+
+	public string function uiCommandSeparator() {
+		return '<hr role="separator">';
+	}
+
+	/** Renders a static "no results" placeholder. Pair with `force=true` for
+	    items you want visible regardless of the search query. */
+	public string function uiCommandEmpty(string text = "No results.", string class = "") {
+		var cls = "command-empty";
+		if (len(arguments.class)) cls &= " " & arguments.class;
+		return '<div class="#cls#" data-force>#arguments.text#</div>';
+	}
+
+	public string function uiCommandEnd() {
+		return '</div>';
+	}
+
+	/**
+	 * Wraps a command palette in a `<dialog class="command-dialog">` so it
+	 * presents as a ⌘K-style modal. Renders an optional trigger button.
+	 * Open via `data-ui-dialog-open="<id>"` (handled by wheels-basecoat-ui.js),
+	 * or programmatically via `document.getElementById(id).showModal()`.
+	 */
+	public string function uiCommandDialog(
+		string triggerText = "",
+		string triggerClass = "btn-outline",
+		string id = "",
+		string class = ""
+	) {
+		var local = {};
+		local.id = $uiBuildId(arguments.id, "cmddlg");
+		local.cls = "dialog command-dialog";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+
+		savecontent variable="local.html" {
+			writeOutput(
+				(len(arguments.triggerText) ? '<button type="button" data-ui-dialog-open="#local.id#" class="#arguments.triggerClass#">#arguments.triggerText#</button>' & chr(10) : '')
+				& '<dialog id="#local.id#" class="#local.cls#" aria-label="Command palette">'
+			);
+		}
+		return trim(local.html);
+	}
+
+	public string function uiCommandDialogEnd() {
+		return '</dialog>';
+	}
+
+	// ==============================================
+	// SELECT  (rich combobox driven by basecoat-js's select.js)
+	// ==============================================
+	//
+	// Different from `uiField(type="select")` which wraps the native
+	// <select> element. This is the basecoat-css 0.3.x .select component:
+	// a popover-driven combobox with optional search filtering, multi-select,
+	// keyboard navigation, and a hidden input for form submission.
+	//
+	//   <div class="select" data-placeholder="Pick one">
+	//     <button aria-expanded="false" aria-haspopup="listbox">
+	//       <span>Selected label</span>
+	//     </button>
+	//     <div data-popover aria-hidden="true">
+	//       <header><input type="text" placeholder="Search..."></header>
+	//       <div role="listbox">
+	//         <div role="option" data-value="a">Apple</div>
+	//         …
+	//       </div>
+	//     </div>
+	//     <input type="hidden" name="fruit" value="a">
+	//   </div>
+
+	/**
+	 * Renders a basecoat select / combobox in one call.
+	 *
+	 * @name Hidden input name for form submission. Required.
+	 * @options "value:Label[:disabled],value:Label" — same shape as `uiField(type=select)`.
+	 *          Append `:disabled` as a third segment to disable that option.
+	 * @value Initial selected value. For multiselect, pass a JSON-encoded
+	 *        array string ('["a","b"]') or a comma-separated list.
+	 * @placeholder Shown when nothing is selected.
+	 * @search Render the search input in the popover header.
+	 * @multiselect Allow multiple selections; hidden input emits a JSON array.
+	 * @closeOnSelect Close the popover after each selection (single-select default leaves it open
+	 *                only when multi; pass `true` to override).
+	 */
+	public string function uiSelect(
+		required string name,
+		required string options,
+		string value = "",
+		string placeholder = "Select an option",
+		boolean search = false,
+		boolean multiselect = false,
+		boolean closeOnSelect = false,
+		string id = "",
+		string class = ""
+	) {
+		var local = {};
+		local.id = $uiBuildId(arguments.id, "sel");
+		local.cls = "select";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+
+		// Parse the options string into an array of {value, label, disabled}.
+		local.parsed = [];
+		for (var opt in listToArray(arguments.options)) {
+			var parts = listToArray(opt, ":");
+			arrayAppend(local.parsed, {
+				value: parts[1],
+				label: arrayLen(parts) >= 2 ? parts[2] : parts[1],
+				disabled: arrayLen(parts) >= 3 && parts[3] == "disabled"
+			});
+		}
+
+		// Resolve initial selection. Multiselect can arrive as JSON or CSV.
+		local.selected = [];
+		if (arguments.multiselect && len(arguments.value)) {
+			try {
+				var asJson = deserializeJSON(arguments.value);
+				local.selected = isArray(asJson) ? asJson : [arguments.value];
+			} catch (any e) {
+				local.selected = listToArray(arguments.value);
+			}
+		} else if (len(arguments.value)) {
+			local.selected = [arguments.value];
+		}
+
+		// Pre-render the trigger label so there's no FOUC before select.js inits.
+		local.triggerLabel = arguments.placeholder;
+		local.triggerClass = "text-muted-foreground";
+		if (arrayLen(local.selected)) {
+			local.matched = [];
+			for (var item in local.parsed) {
+				if (arrayFind(local.selected, item.value)) arrayAppend(local.matched, item.label);
+			}
+			if (arrayLen(local.matched)) {
+				local.triggerLabel = arrayToList(local.matched, ", ");
+				local.triggerClass = "";
+			}
+		}
+
+		// Hidden input value: JSON array for multi, plain string for single.
+		local.hiddenValue = arguments.multiselect
+			? serializeJSON(local.selected)
+			: (arrayLen(local.selected) ? local.selected[1] : "");
+
+		savecontent variable="local.html" {
+			var dataAttrs = ' data-placeholder="#arguments.placeholder#"';
+			if (arguments.closeOnSelect) dataAttrs &= ' data-close-on-select="true"';
+			writeOutput('<div class="#local.cls#" id="#local.id#"#dataAttrs#>' & chr(10));
+
+			writeOutput('<button type="button" aria-expanded="false" aria-haspopup="listbox" aria-controls="#local.id#-listbox">' & chr(10));
+			var spanCls = len(local.triggerClass) ? ' class="#local.triggerClass#"' : "";
+			writeOutput('<span#spanCls#>#local.triggerLabel#</span>' & chr(10));
+			writeOutput('</button>' & chr(10));
+
+			writeOutput('<div data-popover aria-hidden="true">' & chr(10));
+			if (arguments.search) {
+				writeOutput('<header><input type="text" placeholder="Search..." aria-label="Search options"></header>' & chr(10));
+			}
+			writeOutput('<div role="listbox" id="#local.id#-listbox"');
+			if (arguments.multiselect) writeOutput(' aria-multiselectable="true"');
+			writeOutput('>' & chr(10));
+			var idx = 0;
+			for (var item in local.parsed) {
+				idx++;
+				var optId = "#local.id#-opt-#idx#";
+				var isSel = arrayFind(local.selected, item.value) > 0;
+				writeOutput('<div role="option" id="#optId#" data-value="#item.value#"');
+				if (isSel) writeOutput(' aria-selected="true"');
+				if (item.disabled) writeOutput(' aria-disabled="true"');
+				writeOutput('>#item.label#</div>' & chr(10));
+			}
+			writeOutput('</div>' & chr(10));
+			writeOutput('</div>' & chr(10));
+
+			writeOutput('<input type="hidden" name="#arguments.name#" value="#htmlEditFormat(local.hiddenValue)#">' & chr(10));
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
 }
+
+
