@@ -97,6 +97,9 @@
 		<tr><td><code>uiField</code></td><td>Label + input + description + error. Types: text, email, password, number, tel, url, date, datetime-local, time, search, textarea, select, checkbox, switch.</td></tr>
 		<tr><td><code>uiBoundField</code> <span class="pill pill-new">v2</span></td><td>Wheels model-bound field — auto-resolves value, name, label, and error from the controller-scoped model object. Mirrors <code>textField(objectName=, property=)</code>'s API.</td></tr>
 		<tr><td><code>uiSelect</code> <span class="pill pill-new">v2.2</span></td><td>Rich combobox (popover, optional search, multi-select). Distinct from <code>uiField(type=select)</code> which renders a native &lt;select&gt;. Driven by <code>select.js</code>.</td></tr>
+		<tr><td><code>uiBoundSelect</code> <span class="pill pill-new">v2.3</span></td><td>Wheels-bound variant of <code>uiSelect</code> — same ergonomics as <code>uiBoundField</code>, with multiselect-array auto-serialization.</td></tr>
+		<tr><td><code>uiSlider</code> <span class="pill pill-new">v2.3</span></td><td>basecoat-styled range slider with --slider-value fill computed server-side. Optional output mirror kept live by wheels-basecoat-ui.js.</td></tr>
+		<tr><td><code>uiBoundSlider</code> <span class="pill pill-new">v2.3</span></td><td>Wheels-bound variant of <code>uiSlider</code>.</td></tr>
 	</table>
 
 	<pre><code>uiBoundField(objectName="post", property="title", required=true)
@@ -114,6 +117,7 @@ uiBoundField(objectName="post", property="status", type="select",
 		<tr><td><code>uiDropdown</code> + <code>uiDropdownItem</code> + <code>uiDropdownSeparator</code> + <code>uiDropdownEnd</code> <span class="pill pill-new">v2.1</span></td><td>.dropdown-menu wrapper + popover-driven menu with [role=menuitem] children. Keyboard navigation, outside-click + Escape dismissal.</td></tr>
 		<tr><td><code>uiBreadcrumb</code> + <code>uiBreadcrumbItem</code> + <code>uiBreadcrumbSeparator</code> + <code>uiBreadcrumbEnd</code> <span class="pill pill-new">CSS in v2.2</span></td><td>Semantic &lt;nav&gt;&lt;ol&gt; trail. Trailing item with no href becomes the current page (aria-current). v2.2 ships visual defaults via the bundled <code>wheels-basecoat-extras.min.css</code>.</td></tr>
 		<tr><td><code>uiPagination</code> <span class="pill pill-new">CSS in v2.2</span></td><td>Full prev/next + page-number nav with ellipsis windows. ARIA-compliant. v2.2 ships visual defaults.</td></tr>
+		<tr><td><code>uiSteps</code> + <code>uiStep</code> + <code>uiStepsEnd</code> <span class="pill pill-new">v2.3</span></td><td>Multi-step / wizard progress indicator. Status: complete / current / upcoming. Auto-numbered. Mobile-stacked.</td></tr>
 		<tr><td><code>uiSidebar</code> + <code>uiSidebarHeader</code> + <code>uiSidebarBody</code> + <code>uiSidebarGroup</code> + <code>uiSidebarItem</code> + <code>uiSidebarFooter</code> <span class="pill pill-new">v2.1</span></td><td>Semantic &lt;aside&gt;&lt;nav&gt;&lt;header&gt;/&lt;section&gt;/&lt;footer&gt; structure with mobile-collapse + open/close events handled by basecoat-js.</td></tr>
 		<tr><td><code>uiSidebarToggle</code> <span class="pill pill-new">v2.1</span></td><td>CSP-safe button that dispatches the basecoat:sidebar CustomEvent (open / close / toggle).</td></tr>
 	</table>
@@ -165,6 +169,7 @@ turboStreamEnd()</code></pre>
 		<li><strong>v2.0</strong>: bundled CSS+JS, <code>uiBoundField</code>, toasts, popover, avatar, kbd, button group, fieldset, dark mode, Turbo Stream helpers, argument validation, CSP-safe dialog.</li>
 		<li><strong>v2.1</strong>: tabs / dropdown / sidebar reworked to match basecoat-css 0.3.x's ARIA selectors and basecoat-js's contracts.</li>
 		<li><strong>v2.2</strong>: bundled <code>wheels-basecoat-extras.min.css</code> (breadcrumb + pagination defaults), <code>uiCommand</code> family + <code>uiCommandDialog</code> (⌘K-style palette), <code>uiSelect</code> (rich combobox).</li>
+		<li><strong>v2.3</strong>: <code>uiSlider</code> + <code>uiBoundSlider</code>, <code>uiSteps</code> family for wizards, <code>uiBoundSelect</code> Wheels integration for the rich combobox.</li>
 	</ul>
 
 	<h2>Links</h2>
