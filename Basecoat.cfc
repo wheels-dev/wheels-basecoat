@@ -60,14 +60,17 @@ component output="false" {
 	) {
 		var local = {};
 
-		// Build Basecoat compound class: btn[-size][-icon][-variant]
+		// Build Basecoat compound class: btn[-size][-icon]-variant
+		// Always emit the variant suffix so rendered HTML self-documents
+		// (e.g. `btn-primary` instead of bare `btn`). basecoat-css ships
+		// matching selectors for every size×variant combination.
 		local.isIconOnly = len(arguments.icon) && !len(arguments.text);
 		local.parts = [];
 		if (arguments.size != "md") arrayAppend(local.parts, arguments.size);
 		if (local.isIconOnly) arrayAppend(local.parts, "icon");
-		if (arguments.variant != "primary") arrayAppend(local.parts, arguments.variant);
+		arrayAppend(local.parts, arguments.variant);
 
-		local.cls = arrayLen(local.parts) ? "btn-" & arrayToList(local.parts, "-") : "btn";
+		local.cls = "btn-" & arrayToList(local.parts, "-");
 		if (len(arguments.class)) local.cls &= " " & arguments.class;
 
 		// Inner content: icon + text

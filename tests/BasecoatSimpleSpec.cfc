@@ -9,9 +9,9 @@ component extends="wheels.WheelsTest" {
 
 			describe("uiButton", () => {
 
-				it("renders primary button with bare btn class", () => {
+				it("renders primary button with btn-primary class", () => {
 					var html = variables.bc.uiButton(text="Save");
-					expect(html).toMatch('<button type="button" class="btn"');
+					expect(html).toMatch('<button type="button" class="btn-primary"');
 					expect(html).toMatch(">Save<");
 				});
 
@@ -20,9 +20,9 @@ component extends="wheels.WheelsTest" {
 					expect(html).toMatch('class="btn-secondary"');
 				});
 
-				it("renders small size", () => {
+				it("renders small size with primary variant", () => {
 					var html = variables.bc.uiButton(text="Go", size="sm");
-					expect(html).toMatch('class="btn-sm"');
+					expect(html).toMatch('class="btn-sm-primary"');
 				});
 
 				it("renders small destructive compound class", () => {
@@ -30,9 +30,9 @@ component extends="wheels.WheelsTest" {
 					expect(html).toMatch('class="btn-sm-destructive"');
 				});
 
-				it("renders icon-only button", () => {
+				it("renders icon-only primary button", () => {
 					var html = variables.bc.uiButton(icon="plus");
-					expect(html).toMatch('class="btn-icon"');
+					expect(html).toMatch('class="btn-icon-primary"');
 					expect(html).toMatch('<svg');
 				});
 
