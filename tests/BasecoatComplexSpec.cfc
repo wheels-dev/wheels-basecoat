@@ -32,15 +32,18 @@ component extends="wheels.WheelsTest" {
 					expect(html).notToMatch("aria-describedby");
 				});
 
-				it("renders trigger button when triggerText provided", () => {
+				it("renders trigger button with CSP-safe data-attribute when triggerText provided", () => {
 					var html = variables.bc.uiDialog(title="T", triggerText="Open Dialog");
 					expect(html).toMatch('>Open Dialog<');
-					expect(html).toMatch("showModal()");
+					// 2.x switched from inline `onclick="...showModal()..."` to a
+					// `data-ui-dialog-open` attribute handled by wheels-basecoat-ui.js.
+					expect(html).toMatch('data-ui-dialog-open=');
+					expect(html).notToMatch("onclick=");
 				});
 
 				it("omits trigger button when triggerText empty", () => {
 					var html = variables.bc.uiDialog(title="T");
-					expect(html).notToMatch("showModal()");
+					expect(html).notToMatch('data-ui-dialog-open=');
 				});
 
 				it("respects explicit ID", () => {
@@ -49,10 +52,12 @@ component extends="wheels.WheelsTest" {
 					expect(html).toMatch('aria-labelledby="my-modal-title"');
 				});
 
-				it("uiDialogEnd includes close button with X SVG", () => {
+				it("uiDialogEnd includes close button with X SVG and CSP-safe data-attr", () => {
 					var html = variables.bc.uiDialogEnd();
 					expect(html).toMatch('aria-label="Close dialog"');
-					expect(html).toMatch("this.closest('dialog').close()");
+					// 2.x: delegated close handler via `data-ui-dialog-close`.
+					expect(html).toMatch('data-ui-dialog-close');
+					expect(html).notToMatch("onclick=");
 					expect(html).toMatch('<svg');
 					expect(html).toMatch('</dialog>');
 				});
