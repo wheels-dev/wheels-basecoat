@@ -2,6 +2,60 @@
 
 All notable changes to this package will be documented in this file.
 
+## [3.0.0] — 2026-05-01
+
+This release positions wheels-basecoat as the killer feature of Wheels 4.0 — every common UI pattern has a one-line helper, every form has a Wheels-bound variant, and every AI coding assistant can pick up the package and write idiomatic code on the first try without trial-and-error.
+
+### Added — AI / dev experience
+
+- **Comprehensive `CLAUDE.md`** rewrite — read order, package architecture, full helper category overview, the 14 coding rules every generated CFML must follow.
+- **`.ai/HELPERS.md`** — formal signature reference for every public helper, alphabetical-ish by category.
+- **`.ai/EXAMPLES.md`** — scenario-driven recipes: layout, posts index/new/edit/show, login/signup, settings, wizard, dashboard, ⌘K palette, Turbo Stream delete, resource scaffold.
+- **`.ai/SCAFFOLDS.md`** — copy-paste page templates for index/show/new/edit/layout/base controller/resource controller/turbo-stream-remove partial.
+- **`.ai/PATTERNS.md`** — when-to-use decision trees for every helper family.
+- **`.ai/PITFALLS.md`** — 14 known footguns surfaced in real Wheels-tutorial use, each with symptom + cause + fix.
+- **`.ai/ARCHITECTURE.md`** updated — design rationale, naming, the PackageLoader mixin gotcha, CSP safety, Hotwire integration patterns, version history.
+- **`examples/showcase/`** — drop-in controller + view + route snippet that mounts a live `/basecoat-showcase` URL in the host app. Renders every helper with real demo data. Solves the "package's `index.cfm` runs in admin scope where helpers aren't mixed in" limitation.
+- **`INSTALL.md`** + `box.json` `instructionsFile` pointer — three-step install guide, asset publishing, optional showcase mount, troubleshooting.
+
+### Added — Layout / display helpers
+
+- **`uiCallout(title, body, variant)`** — boxed inline note for body content. Variants: info, tip, warning, success. Lighter visual weight than `uiAlert` (which is for page-level notices).
+- **`uiEmptyState(title, description, icon, actionText, actionHref, actionIcon)`** — centered placeholder for zero-data scenarios with optional CTA button.
+- **`uiAccordion`** family (`uiAccordion`, `uiAccordionItem(title, open)`, `uiAccordionItemEnd`, `uiAccordionEnd`) — CSS-only via `<details>/<summary>`. Animated chevron rotation, hover state, semantic disclosure.
+- **`uiTimeline`** family (`uiTimeline`, `uiTimelineItem(title, time, icon, description)`, `uiTimelineEnd`) — vertical timeline with marker icons + connecting line.
+- **`uiCodeBlock(content, language, filename, showCopy, escape)`** — styled code display with optional title bar (filename + language) + copy-to-clipboard button. Auto-escapes HTML by default; pass `escape=false` for pre-highlighted markup.
+- **`uiTagInput(name, value, suggestions, placeholder, label, maxTags, allowFree, multipleHidden)`** — multi-value chip entry with optional `<datalist>` autocomplete. Enter / comma adds a pill; Backspace removes the last; pill `×` button removes individual. Hidden input(s) kept in sync by `wheels-basecoat-ui.js`. Supports CSV or `name[]` hidden output.
+- **`uiBoundTagInput(objectName, property, ...)`** — Wheels-bound variant that resolves array/JSON/CSV from the model.
+
+### Added — File upload + date picker
+
+- **`uiFileUpload(name, accept, multiple, dragDrop, label, description)`** — basecoat-styled file input with drag-and-drop zone (handled by `wheels-basecoat-ui.js`). File list mirror updates on selection. Clean fallback when JS is disabled.
+- **`uiBoundFile(objectName, property, ...)`** — Wheels-bound variant; multi-upload variants get `name="<obj>[<prop>][]"`.
+- **`uiDatePicker(name, value, label, min, max, required)`** — basecoat-styled `<input type="date">` with auto-coercion of Lucee-quoted datetime values to ISO `yyyy-mm-dd` so edit forms pre-populate cleanly.
+
+### Added — Wheels resource conventions
+
+- **`uiPaginationFor(query, baseUrl)`** — pagination UI for a Wheels paginated query result. Reads `currentpage` and `totalpages` columns directly. Returns `""` when there's nothing to paginate.
+- **`uiResourceTable(query, columns, editRoute, deleteRoute, showRoute, keyColumn)`** — auto-builds a basecoat table from a Wheels query result. Picks columns, formats cells (booleans → ✓/—, dates → "Mmm D, YYYY"), wraps the first cell in a show-route link if provided, renders Edit + Delete row-action buttons when routes are configured.
+- **`uiResourceForm(model, submitRoute, submitMethod, excludeFields)`** — auto-builds a Wheels-bound form from a model's properties. Reads `properties()`, `enum()` declarations, and column types to pick input types per property. For polished public-facing pages, hand-author with `uiBound*`. For admin scaffolds and prototypes, this is the fastest path to a rendered form.
+- **Helper utilities exposed:** `$formatCell`, `$inferInputType`, `$optionsFromEnum` (public for PackageLoader reachability — see `.ai/PITFALLS.md` #11).
+
+### Added — Extras CSS + UI shim updates
+
+- **`wheels-basecoat-extras.min.css`** extended with `.ui-callout` (4 variants), `.ui-empty-state`, `.ui-accordion` + chevron rotation, `.ui-timeline`, `.ui-code-block` (header + copy button), `.ui-tag-input` + `.ui-tag-pill`, `.ui-file-upload` + drag-and-drop styling.
+- **`wheels-basecoat-ui.js`** extended with:
+  - `data-ui-tag-remove` click handler (removes pills, keeps hidden inputs in sync).
+  - `data-ui-code-copy` click handler (`navigator.clipboard.writeText` on the `<code>` content; visual confirmation via `data-copied` attribute for 1.2s).
+  - `data-ui-file-upload` `dragover` / `dragleave` / `drop` handlers (assigns dropped files to the underlying input + dispatches `change`).
+  - File `change` handler (mirrors the file list inside the upload zone).
+  - Tag input keyboard handlers (Enter/comma adds, Backspace removes from empty entry).
+- **Four new icons:** `copy`, `upload`, `calendar` (plus `star` from v2.4).
+
+### Changed
+
+- `box.json` repository URL fixed to point at `wheels-dev/wheels-basecoat` (was pointing at the old monorepo URL); version aligned with `package.json`; expanded keywords (hotwire, turbo, dark-mode); `instructionsFile: INSTALL.md`.
+
 ## [2.4.0-rc.1] — 2026-05-01
 
 ### Added

@@ -383,7 +383,10 @@ component output="false" {
 			"menu": '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
 			"home": '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
 			"file-text": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/>',
-			"star": '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>'
+			"star": '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+			"copy": '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+			"upload": '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+			"calendar": '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>'
 		};
 
 		var paths = structKeyExists(icons, arguments.name) ? icons[arguments.name] : '<circle cx="12" cy="12" r="10"/>';
@@ -2408,6 +2411,736 @@ component output="false" {
 			}
 		}
 		return trim(local.html);
+	}
+
+	// ==============================================
+	// CALLOUT  (inline note/tip/warning/success — lighter than uiAlert)
+	// ==============================================
+
+	/**
+	 * Boxed inline note for body content. Lighter visual weight than uiAlert
+	 * (which is for page-level notices) — use uiCallout for tips, warnings,
+	 * info-asides scattered through long-form content.
+	 *
+	 * @variant info | tip | warning | success
+	 */
+	public string function uiCallout(
+		string title = "",
+		string body = "",
+		string variant = "info",
+		string icon = "",
+		string class = ""
+	) {
+		$validateEnum(arguments.variant, "info,tip,warning,success", "uiCallout", "variant");
+		var local = {};
+		local.cls = "ui-callout ui-callout-" & arguments.variant;
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+		local.iconMap = {"info":"info","tip":"check-circle","warning":"alert-triangle","success":"check-circle"};
+		local.iconName = len(arguments.icon) ? arguments.icon : local.iconMap[arguments.variant];
+
+		savecontent variable="local.html" {
+			writeOutput('<div class="#local.cls#" role="note">' & chr(10));
+			writeOutput($uiLucideIcon(local.iconName, 18) & chr(10));
+			writeOutput('<div>' & chr(10));
+			if (len(arguments.title)) writeOutput('<p class="ui-callout-title">#arguments.title#</p>' & chr(10));
+			if (len(arguments.body))  writeOutput('<div class="ui-callout-body">#arguments.body#</div>' & chr(10));
+			writeOutput('</div>' & chr(10));
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	// ==============================================
+	// EMPTY STATE
+	// ==============================================
+
+	/**
+	 * Centered empty-state placeholder for zero-data scenarios.
+	 *
+	 * @actionText optional CTA button text. If set, an action button is appended.
+	 * @actionHref CTA destination URL.
+	 * @actionIcon Lucide icon for the CTA.
+	 */
+	public string function uiEmptyState(
+		string title = "",
+		string description = "",
+		string icon = "info",
+		string actionText = "",
+		string actionHref = "",
+		string actionIcon = "plus",
+		string class = ""
+	) {
+		var local = {};
+		local.cls = "ui-empty-state";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+
+		savecontent variable="local.html" {
+			writeOutput('<div class="#local.cls#">' & chr(10));
+			if (len(arguments.icon)) {
+				writeOutput('<div class="ui-empty-state-icon">' & $uiLucideIcon(arguments.icon, 48) & '</div>' & chr(10));
+			}
+			if (len(arguments.title)) writeOutput('<h3>#arguments.title#</h3>' & chr(10));
+			if (len(arguments.description)) writeOutput('<p>#arguments.description#</p>' & chr(10));
+			if (len(arguments.actionText) && len(arguments.actionHref)) {
+				writeOutput(uiButton(text=arguments.actionText, href=arguments.actionHref, icon=arguments.actionIcon) & chr(10));
+			}
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	// ==============================================
+	// ACCORDION  (CSS-only via <details>/<summary>)
+	// ==============================================
+
+	/** Opens an accordion group. Close with uiAccordionEnd(). */
+	public string function uiAccordion(string class = "") {
+		var cls = "ui-accordion";
+		if (len(arguments.class)) cls &= " " & arguments.class;
+		return '<div class="#cls#">';
+	}
+
+	/**
+	 * Opens a collapsible accordion item.
+	 *
+	 * @open Render expanded by default.
+	 */
+	public string function uiAccordionItem(required string title, boolean open = false, string class = "") {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		var openAttr = arguments.open ? " open" : "";
+		var chev = $uiLucideIcon("chevron-right", 16, 2, "ui-accordion-chev");
+		return '<details#openAttr##classAttr#><summary>#chev#<span>#arguments.title#</span></summary><div class="ui-accordion-body">';
+	}
+
+	public string function uiAccordionItemEnd() {
+		return '</div></details>';
+	}
+
+	public string function uiAccordionEnd() {
+		return '</div>';
+	}
+
+	// ==============================================
+	// TIMELINE
+	// ==============================================
+
+	/** Opens a vertical timeline. Close with uiTimelineEnd(). */
+	public string function uiTimeline(string class = "") {
+		var cls = "ui-timeline";
+		if (len(arguments.class)) cls &= " " & arguments.class;
+		return '<ol class="#cls#">';
+	}
+
+	/**
+	 * Renders one timeline entry.
+	 *
+	 * @icon Lucide name; default "ellipsis" for a generic dot marker.
+	 */
+	public string function uiTimelineItem(
+		required string title,
+		string time = "",
+		string icon = "ellipsis",
+		string description = "",
+		string class = ""
+	) {
+		var classAttr = len(arguments.class) ? ' class="#arguments.class#"' : "";
+		var local = {};
+		savecontent variable="local.html" {
+			writeOutput('<li#classAttr#>' & chr(10));
+			writeOutput('<span class="ui-timeline-marker">' & $uiLucideIcon(arguments.icon, 14) & '</span>' & chr(10));
+			writeOutput('<div class="ui-timeline-content">' & chr(10));
+			writeOutput('<div class="ui-timeline-row">' & chr(10));
+			writeOutput('<p class="ui-timeline-title">#arguments.title#</p>' & chr(10));
+			if (len(arguments.time)) writeOutput('<time class="ui-timeline-time">#arguments.time#</time>' & chr(10));
+			writeOutput('</div>' & chr(10));
+			if (len(arguments.description)) writeOutput('<p class="ui-timeline-description">#arguments.description#</p>' & chr(10));
+			writeOutput('</div>' & chr(10));
+			writeOutput('</li>');
+		}
+		return trim(local.html);
+	}
+
+	public string function uiTimelineEnd() {
+		return '</ol>';
+	}
+
+	// ==============================================
+	// CODE BLOCK  (with optional filename header + copy button)
+	// ==============================================
+
+	/**
+	 * Renders a styled code display. Pass `content` as raw text (the helper
+	 * htmlEditFormats it). For syntax-highlighted code, pass pre-highlighted
+	 * HTML in `content` and `escape=false`.
+	 *
+	 * The copy button uses `data-ui-code-copy` — handled by wheels-basecoat-ui.js.
+	 */
+	public string function uiCodeBlock(
+		string content = "",
+		string language = "",
+		string filename = "",
+		boolean showCopy = true,
+		boolean escape = true,
+		string class = ""
+	) {
+		var local = {};
+		local.cls = "ui-code-block";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+		local.body = arguments.escape ? htmlEditFormat(arguments.content) : arguments.content;
+		local.codeClass = len(arguments.language) ? ' class="language-#arguments.language#"' : "";
+
+		savecontent variable="local.html" {
+			writeOutput('<figure class="#local.cls#">' & chr(10));
+			if (len(arguments.filename) || len(arguments.language) || arguments.showCopy) {
+				writeOutput('<figcaption class="ui-code-block-header">' & chr(10));
+				if (len(arguments.filename)) {
+					writeOutput('<span class="ui-code-block-filename">#arguments.filename#</span>' & chr(10));
+				}
+				if (len(arguments.language) && !len(arguments.filename)) {
+					writeOutput('<span class="ui-code-block-language">#arguments.language#</span>' & chr(10));
+				}
+				if (arguments.showCopy) {
+					writeOutput('<button type="button" class="ui-code-block-copy" data-ui-code-copy aria-label="Copy code">' & $uiLucideIcon("copy", 14) & '</button>' & chr(10));
+				}
+				writeOutput('</figcaption>' & chr(10));
+			}
+			writeOutput('<pre><code#local.codeClass#>#local.body#</code></pre>' & chr(10));
+			writeOutput('</figure>');
+		}
+		return trim(local.html);
+	}
+
+	// ==============================================
+	// TAG INPUT  (multi-value chip entry)
+	// ==============================================
+
+	/**
+	 * Multi-value chip input. Renders existing values as removable pills,
+	 * an entry text input, an optional `<datalist>` of suggestions, and a
+	 * single hidden input with the comma-joined value (or JSON when
+	 * `multipleHidden=true`, where each tag becomes `name="<name>[]"`).
+	 *
+	 * Interactivity is wired by `wheels-basecoat-ui.js`:
+	 *   - Enter or comma in the entry input adds a pill
+	 *   - Backspace in an empty entry removes the last pill
+	 *   - Click the × on a pill removes it
+	 * The hidden input is updated on every change.
+	 *
+	 * @value Initial values — comma-separated, JSON array, or real CFML array.
+	 * @suggestions Comma-separated list rendered into a `<datalist>` for autocomplete.
+	 * @maxTags 0 = no limit.
+	 * @allowFree When false, only suggestions can be added.
+	 * @multipleHidden When true, emits one `<input type="hidden" name="<name>[]">` per tag instead of one CSV input.
+	 */
+	public string function uiTagInput(
+		required string name,
+		any value = "",
+		string suggestions = "",
+		string placeholder = "Add a tag...",
+		string label = "",
+		string description = "",
+		numeric maxTags = 0,
+		boolean allowFree = true,
+		boolean multipleHidden = false,
+		string id = "",
+		string class = ""
+	) {
+		var local = {};
+		local.id = $uiBuildId(arguments.id, "tag");
+		local.cls = "ui-tag-input";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+
+		// Normalize value to array.
+		local.tags = [];
+		if (IsArray(arguments.value)) {
+			local.tags = arguments.value;
+		} else if (Len(arguments.value)) {
+			try {
+				var asJson = deserializeJSON(arguments.value);
+				local.tags = isArray(asJson) ? asJson : listToArray(arguments.value);
+			} catch (any e) {
+				local.tags = listToArray(arguments.value);
+			}
+		}
+
+		local.dataAttrs = ' data-name="#arguments.name#"'
+			& ' data-allow-free="#arguments.allowFree ? 'true' : 'false'#"';
+		if (arguments.maxTags > 0) local.dataAttrs &= ' data-max-tags="#arguments.maxTags#"';
+		if (arguments.multipleHidden) local.dataAttrs &= ' data-multiple="true"';
+
+		savecontent variable="local.html" {
+			writeOutput('<div class="grid gap-2">' & chr(10));
+			if (len(arguments.label)) writeOutput('<label for="#local.id#">#arguments.label#</label>' & chr(10));
+
+			writeOutput('<div class="#local.cls#"#local.dataAttrs#>' & chr(10));
+			writeOutput('<div class="ui-tag-input-pills">' & chr(10));
+			for (var t in local.tags) {
+				writeOutput('<span class="ui-tag-pill" data-value="#htmlEditFormat(t)#">#t# <button type="button" class="ui-tag-pill-remove" data-ui-tag-remove aria-label="Remove">' & $uiLucideIcon("x", 12) & '</button></span>' & chr(10));
+			}
+			writeOutput('</div>' & chr(10));
+
+			var listAttr = len(arguments.suggestions) ? ' list="#local.id#-list"' : "";
+			writeOutput('<input type="text" id="#local.id#" class="ui-tag-input-entry" placeholder="#arguments.placeholder#"#listAttr#>' & chr(10));
+
+			if (len(arguments.suggestions)) {
+				writeOutput('<datalist id="#local.id#-list">' & chr(10));
+				for (var s in listToArray(arguments.suggestions)) {
+					writeOutput('<option value="#trim(s)#">' & chr(10));
+				}
+				writeOutput('</datalist>' & chr(10));
+			}
+
+			// Hidden inputs — JS keeps these in sync as the user adds/removes.
+			if (arguments.multipleHidden) {
+				for (var t in local.tags) {
+					writeOutput('<input type="hidden" class="ui-tag-input-hidden" name="#arguments.name#[]" value="#htmlEditFormat(t)#">' & chr(10));
+				}
+			} else {
+				writeOutput('<input type="hidden" class="ui-tag-input-hidden" name="#arguments.name#" value="#htmlEditFormat(arrayToList(local.tags))#">' & chr(10));
+			}
+
+			writeOutput('</div>' & chr(10));
+			if (len(arguments.description)) writeOutput('<p class="text-sm text-muted-foreground">#arguments.description#</p>' & chr(10));
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	/** Wheels-bound variant of uiTagInput. */
+	public string function uiBoundTagInput(
+		required string objectName,
+		required string property,
+		string suggestions = "",
+		string placeholder = "Add a tag...",
+		string label = "",
+		string description = "",
+		numeric maxTags = 0,
+		boolean allowFree = true,
+		boolean multipleHidden = false,
+		string id = "",
+		string class = ""
+	) {
+		if (!structKeyExists(variables, arguments.objectName)) {
+			throw(
+				type = "WheelsBasecoat.ObjectNotFound",
+				message = "uiBoundTagInput: object '#arguments.objectName#' not found in the current scope."
+			);
+		}
+		var obj = variables[arguments.objectName];
+		var raw = "";
+		try { raw = obj[arguments.property] ?: ""; } catch (any e) { raw = ""; }
+		return uiTagInput(
+			name = "#arguments.objectName#[#arguments.property#]",
+			value = raw,
+			suggestions = arguments.suggestions,
+			placeholder = arguments.placeholder,
+			label = len(arguments.label) ? arguments.label : $humanize(arguments.property),
+			description = arguments.description,
+			maxTags = arguments.maxTags,
+			allowFree = arguments.allowFree,
+			multipleHidden = arguments.multipleHidden,
+			id = arguments.id,
+			class = arguments.class
+		);
+	}
+
+	// ==============================================
+	// FILE UPLOAD  (drag-and-drop, with file-list mirror)
+	// ==============================================
+
+	/**
+	 * Renders a styled file input with optional drag-and-drop zone. Drag-and-
+	 * drop is wired by `wheels-basecoat-ui.js` — files dropped onto the
+	 * label are assigned to the underlying `<input type="file">`.
+	 *
+	 * @accept HTML accept attribute, e.g. "image/*" or ".pdf,.docx".
+	 * @multiple Allow multiple files.
+	 * @dragDrop Render as a drag-and-drop zone (default true). When false,
+	 *           renders a more compact native-style file picker button.
+	 * @label Optional form label rendered above the upload zone.
+	 * @description Optional help text below.
+	 */
+	public string function uiFileUpload(
+		required string name,
+		string accept = "",
+		boolean multiple = false,
+		boolean dragDrop = true,
+		string label = "",
+		string description = "",
+		string id = "",
+		string class = ""
+	) {
+		var local = {};
+		local.id = $uiBuildId(arguments.id, "fu");
+		local.cls = "ui-file-upload";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+
+		var inputAttrs = 'id="#local.id#" name="#arguments.name#" type="file"';
+		if (len(arguments.accept)) inputAttrs &= ' accept="#arguments.accept#"';
+		if (arguments.multiple) inputAttrs &= ' multiple';
+
+		var promptText = arguments.multiple ? "Drop files or click to browse" : "Drop a file or click to browse";
+
+		savecontent variable="local.html" {
+			writeOutput('<div class="grid gap-2">' & chr(10));
+			if (len(arguments.label)) writeOutput('<label for="#local.id#">#arguments.label#</label>' & chr(10));
+			writeOutput('<label for="#local.id#" class="#local.cls#" data-ui-file-upload>' & chr(10));
+			writeOutput('<input #inputAttrs#>' & chr(10));
+			writeOutput('<div class="ui-file-upload-prompt">' & chr(10));
+			writeOutput($uiLucideIcon("upload", 24) & chr(10));
+			writeOutput('<span><strong>#promptText#</strong></span>' & chr(10));
+			if (len(arguments.accept)) writeOutput('<span>Accepts: #arguments.accept#</span>' & chr(10));
+			writeOutput('</div>' & chr(10));
+			writeOutput('<div class="ui-file-upload-files"><p class="ui-file-upload-files-empty">No files selected.</p></div>' & chr(10));
+			writeOutput('</label>' & chr(10));
+			if (len(arguments.description)) writeOutput('<p class="text-sm text-muted-foreground">#arguments.description#</p>' & chr(10));
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	/** Wheels-bound variant of uiFileUpload. */
+	public string function uiBoundFile(
+		required string objectName,
+		required string property,
+		string accept = "",
+		boolean multiple = false,
+		boolean dragDrop = true,
+		string label = "",
+		string description = "",
+		string id = "",
+		string class = ""
+	) {
+		if (!structKeyExists(variables, arguments.objectName)) {
+			throw(
+				type = "WheelsBasecoat.ObjectNotFound",
+				message = "uiBoundFile: object '#arguments.objectName#' not found in the current scope."
+			);
+		}
+		return uiFileUpload(
+			name = "#arguments.objectName#[#arguments.property#]" & (arguments.multiple ? "[]" : ""),
+			accept = arguments.accept,
+			multiple = arguments.multiple,
+			dragDrop = arguments.dragDrop,
+			label = len(arguments.label) ? arguments.label : $humanize(arguments.property),
+			description = arguments.description,
+			id = arguments.id,
+			class = arguments.class
+		);
+	}
+
+	// ==============================================
+	// DATE PICKER  (basecoat-styled <input type="date">)
+	// ==============================================
+
+	/**
+	 * Renders a basecoat-styled date input. Uses native `<input type="date">` —
+	 * basecoat-css already styles this nicely. For a richer popover-based
+	 * calendar with range selection, see future v3.x roadmap.
+	 *
+	 * @value ISO `yyyy-mm-dd` string, or any value `IsDate()` accepts.
+	 * @min / @max ISO bounds for the picker.
+	 */
+	public string function uiDatePicker(
+		required string name,
+		string value = "",
+		string label = "",
+		string description = "",
+		string min = "",
+		string max = "",
+		boolean required = false,
+		boolean disabled = false,
+		string id = "",
+		string class = ""
+	) {
+		var local = {};
+		local.id = $uiBuildId(arguments.id, "dp");
+		local.cls = "input";
+		if (len(arguments.class)) local.cls &= " " & arguments.class;
+
+		// Coerce value to yyyy-mm-dd if it's a parseable date (handles the
+		// Lucee quote-wrapped datetime weirdness).
+		local.coercedValue = "";
+		if (len(arguments.value)) {
+			var cleaned = Replace(Trim(arguments.value), "'", "", "all");
+			local.coercedValue = IsDate(cleaned) ? DateFormat(cleaned, "yyyy-mm-dd") : cleaned;
+		}
+
+		var attrs = 'id="#local.id#" name="#arguments.name#" type="date" class="#local.cls#"';
+		if (len(local.coercedValue)) attrs &= ' value="#local.coercedValue#"';
+		if (len(arguments.min)) attrs &= ' min="#arguments.min#"';
+		if (len(arguments.max)) attrs &= ' max="#arguments.max#"';
+		if (arguments.required) attrs &= ' required';
+		if (arguments.disabled) attrs &= ' disabled';
+
+		savecontent variable="local.html" {
+			writeOutput('<div class="grid gap-2">' & chr(10));
+			if (len(arguments.label)) writeOutput('<label for="#local.id#">#arguments.label#</label>' & chr(10));
+			writeOutput('<input #attrs# />' & chr(10));
+			if (len(arguments.description)) writeOutput('<p class="text-sm text-muted-foreground">#arguments.description#</p>' & chr(10));
+			writeOutput('</div>');
+		}
+		return trim(local.html);
+	}
+
+	// ==============================================
+	// WHEELS RESOURCE CONVENTIONS
+	// ==============================================
+
+	/**
+	 * Pagination UI for a Wheels paginated query result.
+	 *
+	 * Wheels' `findAll(page=, perPage=)` returns a query result with
+	 * `currentpage` and `totalpages` columns. Pass it directly along with
+	 * the base URL — uiPaginationFor pulls the numbers out and renders.
+	 *
+	 * @query Wheels paginated query result (must carry `currentpage` and `totalpages`).
+	 */
+	public string function uiPaginationFor(
+		required any query,
+		required string baseUrl,
+		string pageParam = "page",
+		numeric windowSize = 2,
+		string class = ""
+	) {
+		var current = 1;
+		var total = 1;
+		try {
+			if (StructKeyExists(arguments.query, "currentpage")) current = val(arguments.query.currentpage);
+			if (StructKeyExists(arguments.query, "totalpages")) total = val(arguments.query.totalpages);
+		} catch (any e) {}
+		if (current < 1) current = 1;
+		if (total < 1) total = 1;
+		if (total <= 1) return ""; // Nothing to paginate.
+		return uiPagination(
+			currentPage = current,
+			totalPages = total,
+			baseUrl = arguments.baseUrl,
+			pageParam = arguments.pageParam,
+			windowSize = arguments.windowSize,
+			class = arguments.class
+		);
+	}
+
+	/**
+	 * Auto-build a basecoat table from a Wheels query result.
+	 *
+	 * @query Wheels query.
+	 * @columns Comma-separated columns to render. Empty = use the query's full columnList.
+	 * @editRoute Optional Wheels route name for an Edit row action. Requires `keyColumn`.
+	 * @deleteRoute Optional Wheels route name for a Delete row action.
+	 * @showRoute Optional route — when set, the first column's text is wrapped in a link to it.
+	 * @keyColumn The query column whose value identifies the row (passed as the route key).
+	 */
+	public string function uiResourceTable(
+		required any query,
+		string columns = "",
+		string editRoute = "",
+		string deleteRoute = "",
+		string showRoute = "",
+		string keyColumn = "id",
+		string class = ""
+	) {
+		var local = {};
+		local.cols = len(arguments.columns)
+			? listToArray(arguments.columns)
+			: listToArray(arguments.query.columnList ?: "");
+		// Strip the key column from display unless the caller explicitly listed it.
+		if (!len(arguments.columns) && arrayLen(local.cols) > 4) {
+			var filtered = [];
+			for (var c in local.cols) {
+				if (c == arguments.keyColumn) continue;
+				if (ListFindNoCase("createdat,updatedat,deletedat", c)) continue;
+				arrayAppend(filtered, c);
+			}
+			local.cols = filtered;
+		}
+		local.hasActions = len(arguments.editRoute) || len(arguments.deleteRoute);
+
+		savecontent variable="local.html" {
+			writeOutput(uiTable(class=arguments.class) & chr(10));
+			writeOutput(uiTableHeader() & chr(10));
+			for (var c in local.cols) {
+				writeOutput(uiTableHead(text=$humanize(c)) & chr(10));
+			}
+			if (local.hasActions) writeOutput(uiTableHead(text="", class="w-1") & chr(10));
+			writeOutput(uiTableHeaderEnd() & chr(10));
+			writeOutput(uiTableBody() & chr(10));
+			for (var row = 1; row <= arguments.query.recordCount; row++) {
+				writeOutput(uiTableRow() & chr(10));
+				var firstCol = true;
+				for (var c in local.cols) {
+					var raw = arguments.query[c][row];
+					var cell = $formatCell(raw);
+					if (firstCol && len(arguments.showRoute) && StructKeyExists(arguments.query, arguments.keyColumn)) {
+						cell = '<a class="hover:underline" href="' & urlFor(route=arguments.showRoute, key=arguments.query[arguments.keyColumn][row]) & '">' & cell & '</a>';
+					}
+					writeOutput(uiTableCell(text=cell) & chr(10));
+					firstCol = false;
+				}
+				if (local.hasActions) {
+					var actionsHtml = '<div class="flex items-center gap-1 justify-end">';
+					if (len(arguments.editRoute)) {
+						actionsHtml &= uiButton(
+							text = "Edit", icon = "pencil", variant = "ghost", size = "sm",
+							href = urlFor(route=arguments.editRoute, key=arguments.query[arguments.keyColumn][row])
+						);
+					}
+					if (len(arguments.deleteRoute)) {
+						actionsHtml &= buttonTo(
+							route = arguments.deleteRoute,
+							key = arguments.query[arguments.keyColumn][row],
+							text = "Delete", method = "delete",
+							class = "inline-block",
+							inputClass = "btn-sm-destructive",
+							data_turbo_confirm = "Delete this row? This cannot be undone."
+						);
+					}
+					actionsHtml &= '</div>';
+					writeOutput(uiTableCell(text=actionsHtml) & chr(10));
+				}
+				writeOutput(uiTableRowEnd() & chr(10));
+			}
+			writeOutput(uiTableBodyEnd() & chr(10));
+			writeOutput(uiTableEnd());
+		}
+		return trim(local.html);
+	}
+
+	/**
+	 * Format a query cell for display. Booleans, dates, and very long strings
+	 * get sensible treatment so the rendered table looks like the developer
+	 * would have manually written it.
+	 */
+	/** Public for PackageLoader mixin reachability. */
+	public string function $formatCell(any raw) {
+		if (!StructKeyExists(arguments, "raw") || (IsSimpleValue(arguments.raw) && !len(arguments.raw))) return "";
+		if (IsBoolean(arguments.raw) && !IsNumeric(arguments.raw)) {
+			return arguments.raw ? "✓" : "—";
+		}
+		if (IsSimpleValue(arguments.raw)) {
+			var cleaned = Replace(Trim(arguments.raw), "'", "", "all");
+			if (IsDate(cleaned)) return DateFormat(cleaned, "mmm d, yyyy");
+			if (Len(cleaned) > 80) return Left(cleaned, 80) & "…";
+			return cleaned;
+		}
+		return toString(arguments.raw);
+	}
+
+	/**
+	 * Auto-build a Wheels-bound form from a model object's properties.
+	 *
+	 * Reads the model's `properties()` (Wheels' introspection method),
+	 * picks an input type per column type, sets `required` from
+	 * `validatesPresenceOf`, and respects `enum()` declarations.
+	 *
+	 * @model Wheels model object. Must respond to `properties()`.
+	 * @submitRoute Wheels route to submit to. Defaults to model's table.
+	 * @submitMethod "create" or "update".
+	 * @excludeFields Comma-separated property names to skip.
+	 */
+	public string function uiResourceForm(
+		required any model,
+		string submitRoute = "",
+		string submitMethod = "",
+		string excludeFields = "id,createdAt,updatedAt,deletedAt,passwordHash,passwordSalt",
+		string class = ""
+	) {
+		var local = {};
+		local.props = {};
+		try {
+			local.props = arguments.model.properties();
+		} catch (any e) {
+			// Plain struct fallback — derive from struct keys.
+			if (IsStruct(arguments.model)) {
+				for (var k in arguments.model) {
+					local.props[k] = { type: "string", dataType: "varchar" };
+				}
+			}
+		}
+		var skip = listToArray(arguments.excludeFields);
+		var objectName = "model";
+		// Try to bind the model to its conventional Wheels variable name —
+		// we don't have access to that name here, so the caller must use
+		// `uiBoundField` with a known objectName for advanced cases.
+		// We register the model under `variables.__resourceFormModel` for
+		// the bound helpers to look up.
+		variables.__resourceFormModel = arguments.model;
+
+		var isEdit = false;
+		try { isEdit = IsObject(arguments.model) && IsNumeric(arguments.model.id ?: ""); } catch (any e) {}
+		var method = len(arguments.submitMethod) ? arguments.submitMethod : (isEdit ? "update" : "create");
+
+		savecontent variable="local.html" {
+			writeOutput(uiErrorSummary(arguments.model) & chr(10));
+
+			var formArgs = { class: "grid gap-4" };
+			if (len(arguments.submitRoute)) formArgs.route = arguments.submitRoute;
+			else formArgs.action = method;
+			if (isEdit) formArgs.key = arguments.model.id;
+			writeOutput(startFormTag(argumentCollection = formArgs) & chr(10));
+
+			for (var name in local.props) {
+				if (ArrayFind(skip, name)) continue;
+				var meta = local.props[name];
+				var type = $inferInputType(meta);
+				var args = {
+					objectName = "__resourceFormModel",
+					property = name
+				};
+				if (type == "select" && StructKeyExists(meta, "enum") && Len(meta.enum)) {
+					args.type = "select";
+					args.options = $optionsFromEnum(meta.enum);
+				} else if (type == "textarea") {
+					args.type = "textarea";
+					args.rows = 4;
+				} else if (type == "checkbox") {
+					writeOutput(uiBoundCheckbox(objectName="__resourceFormModel", property=name) & chr(10));
+					continue;
+				} else {
+					args.type = type;
+				}
+				writeOutput(uiBoundField(argumentCollection = args) & chr(10));
+			}
+
+			writeOutput('<div class="flex items-center justify-end gap-2 pt-2">' & chr(10));
+			writeOutput(uiButton(text=isEdit ? "Save changes" : "Create", type="submit", icon="check") & chr(10));
+			writeOutput('</div>' & chr(10));
+
+			writeOutput(endFormTag());
+		}
+
+		// Don't leak the temp variable into the next request.
+		StructDelete(variables, "__resourceFormModel");
+		return trim(local.html);
+	}
+
+	/** Public for the same reason as $validateEnum / $humanize — called from
+	    a mixed-in helper, must reach the controller's variables scope. */
+	public string function $inferInputType(required any meta) {
+		var dt = lcase(arguments.meta.dataType ?: arguments.meta.type ?: "");
+		if (StructKeyExists(arguments.meta, "enum") && Len(arguments.meta.enum)) return "select";
+		if (ListFindNoCase("text,longtext,clob", dt) > 0) return "textarea";
+		if (ListFindNoCase("date", dt) > 0) return "date";
+		if (ListFindNoCase("datetime,timestamp", dt) > 0) return "datetime-local";
+		if (ListFindNoCase("time", dt) > 0) return "time";
+		if (ListFindNoCase("bit,boolean,tinyint", dt) > 0) return "checkbox";
+		if (ListFindNoCase("int,integer,bigint,smallint,float,double,decimal,numeric", dt) > 0) return "number";
+		if (Find("email", lcase(arguments.meta.name ?: ""))) return "email";
+		if (Find("url",   lcase(arguments.meta.name ?: ""))) return "url";
+		if (Find("password", lcase(arguments.meta.name ?: ""))) return "password";
+		return "text";
+	}
+
+	/** Public for PackageLoader mixin reachability. */
+	public string function $optionsFromEnum(required string enumValues) {
+		// Wheels stores enum() values as a comma-separated list. Convert each
+		// to "value:Humanized Label" for uiField.
+		var pairs = [];
+		for (var v in listToArray(arguments.enumValues)) {
+			arrayAppend(pairs, v & ":" & $humanize(v));
+		}
+		return arrayToList(pairs);
 	}
 
 }
