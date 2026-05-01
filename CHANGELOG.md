@@ -2,7 +2,7 @@
 
 All notable changes to this package will be documented in this file.
 
-## [3.0.0-rc.1] — 2026-05-01
+## [3.0.0] — 2026-05-01
 
 This release positions wheels-basecoat as the killer feature of Wheels 4.0 — every common UI pattern has a one-line helper, every form has a Wheels-bound variant, and every AI coding assistant can pick up the package and write idiomatic code on the first try without trial-and-error.
 
