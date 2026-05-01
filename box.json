@@ -1,32 +1,33 @@
 {
     "name": "wheels-basecoat",
     "slug": "wheels-basecoat",
-    "version": "1.0.5",
+    "version": "3.0.0-rc.1",
     "author": "Wheels Core Team",
     "homepage": "https://wheels.dev",
     "repository": {
         "type": "git",
-        "URL": "https://github.com/wheels-dev/wheels.git"
+        "URL": "https://github.com/wheels-dev/wheels-basecoat.git"
     },
-    "bugs": "https://github.com/wheels-dev/wheels/issues",
+    "bugs": "https://github.com/wheels-dev/wheels-basecoat/issues",
     "keywords": [
         "wheels",
         "basecoat",
+        "shadcn",
         "ui",
         "components",
-        "shadcn",
+        "design-system",
         "tailwind",
-        "design-system"
+        "hotwire",
+        "turbo",
+        "dark-mode"
     ],
     "type": "cfwheels-plugins",
     "license": [
-        {
-            "type": "MIT",
-            "URL": "https://opensource.org/licenses/MIT"
-        }
+        { "type": "MIT", "URL": "https://opensource.org/licenses/MIT" }
     ],
     "optionalDependencies": {
         "wheels-hotwire": ">=0.1.0"
     },
-    "description": "Basecoat UI component helpers for Wheels. shadcn/ui-quality design using plain HTML + Tailwind CSS. No React required."
+    "description": "Basecoat UI component helpers for Wheels. shadcn/ui-quality design with bundled CSS+JS, native Hotwire/Turbo integration, dark mode, Wheels model-bound form fields.",
+    "instructionsFile": "INSTALL.md"
 }
