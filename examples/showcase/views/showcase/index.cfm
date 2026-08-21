@@ -137,7 +137,7 @@
 		<section class="bcs-section">
 			<div><h3>Bound checkbox / group / radio</h3></div>
 			<div class="bcs-preview" style="display:block">
-				#uiBoundCheckbox(objectName="demoPost", property="featured", switch=true,
+				#uiBoundCheckbox(objectName="demoPost", property="featured", asSwitch=true,
 					description="Featured posts appear at the top of the index.")#
 				<div style="height: 1rem"></div>
 				#uiBoundCheckboxGroup(objectName="demoPost", property="tags",

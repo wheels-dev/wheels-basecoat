@@ -2,6 +2,12 @@
 
 All notable changes to this package will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **`uiBoundCheckbox`** — renamed the `switch` argument to `asSwitch`. Adobe ColdFusion treats `switch` as a reserved keyword, so `boolean switch = false` prevented `Basecoat.cfc` from compiling and none of the helpers mixed in. CSS class `.switch` and HTML `role="switch"` are unchanged. Related: wheels-basecoat #15, wheels-dev/wheels #3378.
+
 ## [3.0.0] — 2026-05-01
 
 This release positions wheels-basecoat as the killer feature of Wheels 4.0 — every common UI pattern has a one-line helper, every form has a Wheels-bound variant, and every AI coding assistant can pick up the package and write idiomatic code on the first try without trial-and-error.

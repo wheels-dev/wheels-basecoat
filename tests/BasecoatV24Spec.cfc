@@ -29,11 +29,26 @@ component extends="wheels.WheelsTest" {
 				expect(html).toMatch('checked');
 			});
 
-			it("supports switch=true to render as a basecoat .switch", () => {
+			it("supports asSwitch=true to render as a basecoat .switch", () => {
 				variables.user = { dark_mode: true };
-				var html = variables.bc.uiBoundCheckbox(objectName="user", property="dark_mode", switch=true);
+				var html = variables.bc.uiBoundCheckbox(objectName="user", property="dark_mode", asSwitch=true);
 				expect(html).toMatch('class="switch"');
 				expect(html).toMatch('role="switch"');
+			});
+
+			it("does not declare reserved-keyword switch on uiBoundCheckbox (Adobe CF compile)", () => {
+				// Adobe ColdFusion 2025 cannot compile `boolean switch = false`
+				// (reserved keyword). Lock the rename so the CFC keeps compiling.
+				var cfcPath = getDirectoryFromPath(getCurrentTemplatePath()) & "../Basecoat.cfc";
+				var src = fileRead(cfcPath);
+				var fnStart = findNoCase("function uiBoundCheckbox(", src);
+				expect(fnStart).toBeGT(0);
+				var afterFn = mid(src, fnStart, 800);
+				var sigEnd = find(") {", afterFn);
+				expect(sigEnd).toBeGT(0);
+				var signature = left(afterFn, sigEnd);
+				expect(signature).notToMatch('boolean\s+switch\s*=');
+				expect(signature).toMatch('boolean\s+asSwitch\s*=');
 			});
 
 			it("humanizes the property into the label by default", () => {

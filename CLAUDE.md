@@ -106,7 +106,7 @@ Idiomatic Wheels-bound form:
     ##uiBoundField(objectName="post", property="body", type="textarea", rows=10)##
     ##uiBoundField(objectName="post", property="status", type="select",
                    options="draft:Draft,published:Published,archived:Archived")##
-    ##uiBoundCheckbox(objectName="post", property="featured", switch=true)##
+    ##uiBoundCheckbox(objectName="post", property="featured", asSwitch=true)##
 
     <div class="flex justify-end gap-2 pt-2">
         <a href="##urlFor(route='posts')##" class="btn-ghost" data-turbo-frame="_top">Cancel</a>

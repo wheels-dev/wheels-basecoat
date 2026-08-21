@@ -30,8 +30,8 @@ Decision trees for "which helper do I use?" Each section is a single question wi
 - For free-form chip entry → `uiTagInput` / `uiBoundTagInput`.
 
 **Single boolean (on/off, agree to terms, etc.)?**
-- `uiBoundCheckbox(objectName="user", property="dark_mode", switch=true)`.
-- The `switch=true` variant renders as a basecoat `.switch`; default is a checkbox.
+- `uiBoundCheckbox(objectName="user", property="dark_mode", asSwitch=true)`.
+- The `asSwitch=true` variant renders as a basecoat `.switch`; default is a checkbox.
 
 **Date / time?**
 - Native pickers are fine for most cases → `uiBoundField(... type="date")` (also `datetime-local`, `time`).

@@ -218,7 +218,7 @@ uiBoundSlider(objectName, property, min = 0, max = 100, step = 1,
               label = "", showValue = false, disabled = false,
               id = "", class = "")
 
-uiBoundCheckbox(objectName, property, label = "", switch = false,
+uiBoundCheckbox(objectName, property, label = "", asSwitch = false,
                 description = "", disabled = false, id = "", class = "")
     → emits a hidden falsy companion input + the checkbox; round-trip-safe
        so params.<obj>.<prop> is always defined as 0 or 1

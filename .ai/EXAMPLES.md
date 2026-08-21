@@ -253,7 +253,7 @@ component extends="wheels.Controller" {
                           description="Leave blank to publish now.")#
         </div>
 
-        #uiBoundCheckbox(objectName="post", property="featured", switch=true,
+        #uiBoundCheckbox(objectName="post", property="featured", asSwitch=true,
                          description="Featured posts appear at the top of the index.")#
 
         <div class="flex items-center justify-end gap-2 pt-2">
@@ -445,11 +445,11 @@ component extends="wheels.Controller" {
             #uiCardContent()#
                 #uiFieldset()#
                     #uiBoundCheckbox(objectName="user", property="email_on_comment",
-                                     label="Email me when someone comments on my post", switch=true)#
+                                     label="Email me when someone comments on my post", asSwitch=true)#
                     #uiBoundCheckbox(objectName="user", property="email_on_mention",
-                                     label="Email me when I'm @-mentioned", switch=true)#
+                                     label="Email me when I'm @-mentioned", asSwitch=true)#
                     #uiBoundCheckbox(objectName="user", property="weekly_digest",
-                                     label="Weekly digest of trending posts", switch=true)#
+                                     label="Weekly digest of trending posts", asSwitch=true)#
                 #uiFieldsetEnd()#
             #uiCardContentEnd()#
         #uiCardEnd()#

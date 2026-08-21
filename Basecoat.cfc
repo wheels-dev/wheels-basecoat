@@ -2082,12 +2082,14 @@ component output="false" {
 	 * checkbox. The browser submits both; the controller receives the
 	 * later (checkbox) value when checked, the falsy hidden value when
 	 * not. So `params.<obj>.<prop>` is always defined as `0` or `1`.
+	 * Pass asSwitch=true to render as a basecoat `.switch` with
+	 * role="switch". Named asSwitch because Adobe CF reserves `switch`.
 	 */
 	public string function uiBoundCheckbox(
 		required string objectName,
 		required string property,
 		string label = "",
-		boolean switch = false,
+		boolean asSwitch = false,
 		string description = "",
 		boolean disabled = false,
 		string id = "",
@@ -2107,9 +2109,9 @@ component output="false" {
 		var name = "#arguments.objectName#[#arguments.property#]";
 		var resolvedLabel = len(arguments.label) ? arguments.label : $humanize(arguments.property);
 		var inputId = $uiBuildId(arguments.id, "fld");
-		var inputCls = arguments.switch ? "switch" : "checkbox";
+		var inputCls = arguments.asSwitch ? "switch" : "checkbox";
 		if (len(arguments.class)) inputCls &= " " & arguments.class;
-		var roleAttr = arguments.switch ? ' role="switch"' : "";
+		var roleAttr = arguments.asSwitch ? ' role="switch"' : "";
 		var disAttr = arguments.disabled ? " disabled" : "";
 
 		var local = {};
