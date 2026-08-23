@@ -1939,7 +1939,7 @@ component output="false" {
 		local.attrs = 'id="#local.id#" name="#arguments.name#" type="range"'
 			& ' min="#arguments.min#" max="#arguments.max#" step="#arguments.step#"'
 			& ' value="#local.val#"'
-			& ' style="--slider-value: #numberFormat(local.pct, '0.##')#%"'
+			& ' style="--slider-value: #numberFormat(local.pct, '0.00')#%"'
 			& ' aria-valuemin="#arguments.min#" aria-valuemax="#arguments.max#" aria-valuenow="#local.val#"';
 		if (arguments.disabled) local.attrs &= " disabled";
 		if (len(arguments.class)) local.attrs &= ' class="#arguments.class#"';
