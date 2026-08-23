@@ -55,6 +55,24 @@ component extends="wheels.WheelsTest" {
 				expect(html).toMatch('aria-valuenow="12"');
 			});
 
+			it("uses NumberFormat 0.00 mask for --slider-value (Adobe CF 2025)", () => {
+				// Adobe ColdFusion 2025 rejects / mishandles NumberFormat mask 0.##
+				// (same class of breakage as the switch reserved-keyword compile fail).
+				// Lock the 0.00 mask so uiSlider — and uiBoundSlider via delegation —
+				// keep compiling. Hashes in needles are built via #### so CFML
+				// interpolation cannot rewrite the source-shape we assert.
+				var cfcPath = getDirectoryFromPath(getCurrentTemplatePath()) & "../Basecoat.cfc";
+				var src = fileRead(cfcPath);
+				var fnStart = findNoCase("function uiSlider(", src);
+				expect(fnStart).toBeGT(0);
+				var afterFn = mid(src, fnStart, 1500);
+				var goodCall = "numberFormat(local.pct, " & "'" & "0.00" & "'" & ")";
+				var badMask = "'" & "0." & "####" & "'";
+				expect(find("--slider-value:", afterFn)).toBeGT(0);
+				expect(find(goodCall, afterFn)).toBeGT(0);
+				expect(find(badMask, src)).toBe(0);
+			});
+
 		});
 
 		describe("v2.3 — uiSteps + uiStep", () => {
