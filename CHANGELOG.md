@@ -2,6 +2,12 @@
 
 All notable changes to this package will be documented in this file.
 
+## [3.0.2] — 2026-08-23
+
+### Fixed
+
+- **`uiSlider`** — changed the `--slider-value` NumberFormat mask from `0.##` to `0.00`. Adobe ColdFusion 2025 rejects / mishandles the `0.##` mask (same class of breakage as the `switch` reserved-keyword compile fail in 3.0.1). `uiBoundSlider` is covered via delegation. Related: wheels-basecoat #15, wheels-dev/wheels #3378.
+
 ## [3.0.1] — 2026-08-21
 
 ### Fixed
